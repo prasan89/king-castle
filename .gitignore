@@ -1,0 +1,47 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+*.pidb.meta
+*.pdb
+*.mdb
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+
+# Firebase / GCP Credentials — NEVER commit these
+Assets/google-services.json
+Assets/google-services.json.meta
+Assets/GoogleService-Info.plist
+Assets/GoogleService-Info.plist.meta
+Assets/StreamingAssets/google-services.json
+firebase-credentials.json
+
+# Android keystore
+*.keystore
+*.jks
+keystore.properties
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI artifacts
+*.apk
+*.aab
+*.ipa
+
+# Addressables cache
+Assets/AddressableAssetsData/AssetGroups/Built In Data.asset
+FastPlatformBuildLayout.txt

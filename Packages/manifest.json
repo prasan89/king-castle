@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "com.unity.2d.physics": "1.0.0",
+    "com.unity.addressables": "2.2.2",
+    "com.unity.inputsystem": "1.11.2",
+    "com.unity.mobile.notifications": "2.4.0",
+    "com.unity.textmeshpro": "3.0.9",
+    "com.unity.ugui": "2.0.0",
+    "com.unity.modules.animation": "1.0.0",
+    "com.unity.modules.androidjni": "1.0.0",
+    "com.unity.modules.audio": "1.0.0",
+    "com.unity.modules.physics2d": "1.0.0",
+    "com.unity.modules.screencapture": "1.0.0",
+    "com.unity.modules.ui": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0"
+  }
+}

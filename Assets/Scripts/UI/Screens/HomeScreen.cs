@@ -1,0 +1,81 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using KingSmash.Core;
+using KingSmash.Services;
+namespace KingSmash.UI.Screens
+{
+    public class HomeScreen : UIScreen
+    {
+        [Header("Top Bar")]
+        [SerializeField] private TextMeshProUGUI _kingLevelLabel;
+        [SerializeField] private TextMeshProUGUI _coinsLabel;
+        [SerializeField] private TextMeshProUGUI _gemsLabel;
+        [SerializeField] private Button _settingsButton;
+
+        [Header("Primary")]
+        [SerializeField] private Button _playButton;
+
+        [Header("Bottom Nav")]
+        [SerializeField] private Button _kingUpgradeButton;
+        [SerializeField] private Button _shopButton;
+        [SerializeField] private Button _dailyButton;
+        [SerializeField] private Button _missionsButton;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            _playButton?.onClick.AddListener(OnPlayClicked);
+            _settingsButton?.onClick.AddListener(OnSettingsClicked);
+            _kingUpgradeButton?.onClick.AddListener(OnKingUpgradeClicked);
+            _shopButton?.onClick.AddListener(OnShopClicked);
+            _dailyButton?.onClick.AddListener(OnDailyClicked);
+            _missionsButton?.onClick.AddListener(OnMissionsClicked);
+        }
+
+        protected override void OnShow()
+        {
+            RefreshPlayerData();
+            ServiceLocator.TryGet<IAnalyticsService>(out var analytics);
+            analytics?.LogEvent(AnalyticsEvents.MainMenuOpened);
+            GameManager.Instance?.TransitionTo(GameState.MainMenu);
+        }
+
+        private void RefreshPlayerData()
+        {
+            if (!ServiceLocator.TryGet<ISaveService>(out var save)) return;
+            var data = save.Current;
+            if (_kingLevelLabel != null) _kingLevelLabel.text = $"Lv {data.kingLevel}";
+            if (_coinsLabel != null)     _coinsLabel.text     = FormatNumber(data.coins);
+            if (_gemsLabel != null)      _gemsLabel.text      = data.gems.ToString();
+        }
+
+        private void OnPlayClicked()
+        {
+            StartCoroutine(UIAnimationController.ButtonPress(_playButton.transform));
+            ScreenManager.Instance.Show<WorldMapScreen>();
+        }
+        private void OnSettingsClicked()     => ScreenManager.Instance.Show<SettingsScreen>();
+        private void OnKingUpgradeClicked()  => ScreenManager.Instance.Show<UpgradeScreen>();
+        private void OnShopClicked()         => ScreenManager.Instance.Show<ShopScreen>();
+        private void OnDailyClicked()        => ScreenManager.Instance.Show<DailyRewardsScreen>();
+        private void OnMissionsClicked()     => ScreenManager.Instance.Show<MissionsScreen>();
+
+        private static string FormatNumber(long n)
+        {
+            if (n >= 1_000_000) return $"{n / 1_000_000f:F1}M";
+            if (n >= 1_000)     return $"{n / 1_000f:F1}K";
+            return n.ToString();
+        }
+
+        private void OnDestroy()
+        {
+            _playButton?.onClick.RemoveListener(OnPlayClicked);
+            _settingsButton?.onClick.RemoveListener(OnSettingsClicked);
+            _kingUpgradeButton?.onClick.RemoveListener(OnKingUpgradeClicked);
+            _shopButton?.onClick.RemoveListener(OnShopClicked);
+            _dailyButton?.onClick.RemoveListener(OnDailyClicked);
+            _missionsButton?.onClick.RemoveListener(OnMissionsClicked);
+        }
+    }
+}
