@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using KingSmash.Ads;
+using KingSmash.Audio;
 using KingSmash.Core;
 using KingSmash.Economy;
 using KingSmash.Levels;
@@ -16,6 +17,7 @@ namespace KingSmash.UI.Screens
 {
     public class LevelCompleteScreen : UIScreen
     {
+        // ── Original fields ──────────────────────────────────────────────────
         [Header("Stars")]
         [SerializeField] private List<GameObject> _starObjects;
 
@@ -38,6 +40,16 @@ namespace KingSmash.UI.Screens
         [Header("Ad Reward")]
         [SerializeField] private DoubleRewardPanel _doubleRewardPanel;
 
+        // ── M13 Polish fields ────────────────────────────────────────────────
+        [Header("M13 Polish")]
+        [SerializeField] private KingSmashTheme     _themeConfig;
+        [SerializeField] private CanvasGroup        _screenCg;
+        [SerializeField] private RectTransform      _resultsPanel;
+        [SerializeField] private ParticleSystem     _celebrationParticles;
+        [SerializeField] private TextMeshProUGUI    _levelNumberLabel;
+        [SerializeField] private Animator           _kingCelebrationAnimator;
+
+        // ── Private state ────────────────────────────────────────────────────
         private LevelResult _result;
         private int         _currentLevelIndex;
 
@@ -48,9 +60,7 @@ namespace KingSmash.UI.Screens
         private bool _doubleRewardDecided;
         private bool _doubleRewardAccepted;
 
-        // -------------------------------------------------------------------------
-        // Lifecycle
-        // -------------------------------------------------------------------------
+        // ── Lifecycle ────────────────────────────────────────────────────────
 
         protected override void Awake()
         {
@@ -62,19 +72,17 @@ namespace KingSmash.UI.Screens
 
         private void OnEnable()
         {
-            LevelController.OnLevelEnded += HandleLevelEnded;
+            LevelController.OnLevelEnded        += HandleLevelEnded;
             KingProgressionService.OnKingLevelUp += HandleKingLevelUp;
         }
 
         private void OnDisable()
         {
-            LevelController.OnLevelEnded -= HandleLevelEnded;
+            LevelController.OnLevelEnded        -= HandleLevelEnded;
             KingProgressionService.OnKingLevelUp -= HandleKingLevelUp;
         }
 
-        // -------------------------------------------------------------------------
-        // Event handlers
-        // -------------------------------------------------------------------------
+        // ── Event handlers ───────────────────────────────────────────────────
 
         private void HandleLevelEnded(int score, int stars, float destructionRatio)
         {
@@ -115,35 +123,55 @@ namespace KingSmash.UI.Screens
             _levelUpToLevel       = toLevel;
         }
 
-        // -------------------------------------------------------------------------
-        // Show / reveal sequence
-        // -------------------------------------------------------------------------
+        // ── Show / reveal sequence ───────────────────────────────────────────
 
         protected override void OnShow()
         {
             if (_result == null) return;
-
             if (_levelUpPanel != null) _levelUpPanel.SetActive(false);
-
-            StartCoroutine(PlayRevealSequence());
+            StartCoroutine(ShowSequence());
         }
 
-        private IEnumerator PlayRevealSequence()
+        private IEnumerator ShowSequence()
         {
-            foreach (var s in _starObjects) if (s != null) s.SetActive(false);
+            // 1. Fade in screen
+            if (_screenCg != null)
+            {
+                _screenCg.alpha = 0f;
+                yield return StartCoroutine(UIAnimationController.Fade(_screenCg, 0f, 1f, 0.2f));
+            }
 
+            // 2. Play LevelComplete sound
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.LevelComplete);
+
+            // 3. Slide in results panel from bottom
+            if (_resultsPanel != null)
+                yield return StartCoroutine(UIAnimationController.SlideIn(_resultsPanel, 80f, 0.3f));
+
+            // Populate level number
+            if (_levelNumberLabel != null)
+                _levelNumberLabel.text = $"Level {_currentLevelIndex + 1}";
+
+            // 4. Wait
             yield return new WaitForSecondsRealtime(0.3f);
+
+            // 5. Stars — BounceReveal with stagger
+            foreach (var s in _starObjects) if (s != null) s.SetActive(false);
 
             for (int i = 0; i < _starObjects.Count; i++)
             {
                 if (i < _result.Stars && _starObjects[i] != null)
                 {
                     _starObjects[i].SetActive(true);
+                    if (ServiceLocator.TryGet<IAudioService>(out var sfx))
+                        sfx.Play(SoundId.Stars);
                     yield return StartCoroutine(UIAnimationController.BounceReveal(_starObjects[i].transform, 0.3f));
-                    yield return new WaitForSecondsRealtime(0.15f);
+                    yield return new WaitForSecondsRealtime(0.1f);
                 }
             }
 
+            // Populate stats labels
             if (_destructionLabel != null)
                 _destructionLabel.text = $"{_result.DestructionRatio * 100f:F0}%";
             if (_enemiesLabel != null)
@@ -151,9 +179,18 @@ namespace KingSmash.UI.Screens
             if (_queenLabel != null)
                 _queenLabel.text = _result.QueenRescued ? "✓" : "✗";
 
-            if (_coinsEarnedLabel != null)
-                yield return StartCoroutine(UIAnimationController.CountUp(_coinsEarnedLabel, 0, _result.CoinsEarned, 1.2f));
+            // 6. Wait
+            yield return new WaitForSecondsRealtime(0.3f);
 
+            // 7. CountUp coins
+            if (_coinsEarnedLabel != null)
+            {
+                if (ServiceLocator.TryGet<IAudioService>(out var coinSfx))
+                    coinSfx.Play(SoundId.Coins);
+                yield return StartCoroutine(UIAnimationController.CountUp(_coinsEarnedLabel, 0, _result.CoinsEarned, 0.8f));
+            }
+
+            // CountUp XP
             long xpEarned = _result.XPEarned;
             if (_xpEarnedLabel != null)
             {
@@ -162,22 +199,54 @@ namespace KingSmash.UI.Screens
                     prefix: "+", suffix: " XP"));
             }
 
+            // Double reward panel
             yield return StartCoroutine(ShowDoubleRewardIfAvailableCoroutine());
 
+            // 8. If leveled up: SlideIn panel, BounceReveal, play Upgrade sound
             if (_leveledUpThisSession && _levelUpPanel != null)
             {
                 if (_levelUpLabel != null)
                     _levelUpLabel.text = $"King Lv {_levelUpFromLevel} → Lv {_levelUpToLevel}";
 
                 _levelUpPanel.SetActive(true);
+                if (_resultsPanel != null)
+                    yield return StartCoroutine(UIAnimationController.SlideIn(_levelUpPanel.transform as RectTransform, 40f, 0.3f));
                 yield return StartCoroutine(UIAnimationController.BounceReveal(_levelUpPanel.transform, 0.4f));
+
+                if (_kingCelebrationAnimator != null)
+                    _kingCelebrationAnimator.SetTrigger("Celebrate");
+
+                if (ServiceLocator.TryGet<IAudioService>(out var upgradeSfx))
+                    upgradeSfx.Play(SoundId.Upgrade);
             }
+
+            // 9. Wait
+            yield return new WaitForSecondsRealtime(0.2f);
+
+            // 10. BounceReveal buttons
+            if (_homeButton != null)
+                StartCoroutine(UIAnimationController.BounceReveal(_homeButton.transform, 0.3f));
+            if (_nextLevelButton != null)
+            {
+                yield return new WaitForSecondsRealtime(0.07f);
+                StartCoroutine(UIAnimationController.BounceReveal(_nextLevelButton.transform, 0.3f));
+            }
+            if (_replayButton != null)
+            {
+                yield return new WaitForSecondsRealtime(0.07f);
+                StartCoroutine(UIAnimationController.BounceReveal(_replayButton.transform, 0.3f));
+            }
+
+            // 11. Celebration particles
+            if (_celebrationParticles != null && !_celebrationParticles.isPlaying)
+                _celebrationParticles.Play();
         }
+
+        // ── Double reward ────────────────────────────────────────────────────
 
         private IEnumerator ShowDoubleRewardIfAvailableCoroutine()
         {
             if (_doubleRewardPanel == null) yield break;
-
             if (!ServiceLocator.TryGet<RewardedAdFlowService>(out var flowService)) yield break;
 
             AdAvailability availability = AdAvailability.Unavailable;
@@ -241,9 +310,7 @@ namespace KingSmash.UI.Screens
             _doubleRewardDecided  = true;
         }
 
-        // -------------------------------------------------------------------------
-        // Button handlers
-        // -------------------------------------------------------------------------
+        // ── Button handlers ──────────────────────────────────────────────────
 
         private void OnHomeClicked()      => SceneLoader.LoadScene(SceneNames.MainMenu);
         private void OnNextLevelClicked() => SceneLoader.LoadScene(SceneNames.Level);
