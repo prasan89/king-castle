@@ -12,7 +12,7 @@ namespace KingSmash.UI.Screens
 {
     public class LevelSelectScreen : UIScreen
     {
-        // ── Existing fields (preserved) ─────────────────────────────────────────
+        // ── Existing fields (preserved) ────────────────────────────────────────
 
         [Header("Navigation")]
         [SerializeField] private Button _backButton;
@@ -33,7 +33,7 @@ namespace KingSmash.UI.Screens
         [SerializeField] private Transform          _powerUpContainer;
         [SerializeField] private PowerUpCardWidget  _powerUpCardPrefab;
 
-        // ── M13 Polish fields ──────────────────────────────────────────────────
+        // ── M13 Polish fields ──────────────────────────────────────────────
 
         [Header("M13 Polish")]
         [SerializeField] private KingSmashTheme _themeConfig;
@@ -45,7 +45,7 @@ namespace KingSmash.UI.Screens
         private int _currentLevelIndex;
         private Coroutine _playPulseCoroutine;
 
-        // ── Lifecycle ──────────────────────────────────────────────────────────
+        // ── Lifecycle ──────────────────────────────────────────────────
 
         protected override void Awake()
         {
@@ -95,7 +95,7 @@ namespace KingSmash.UI.Screens
             if (_playPulseCoroutine != null) { StopCoroutine(_playPulseCoroutine); _playPulseCoroutine = null; }
         }
 
-        // ── Population ─────────────────────────────────────────────────────────
+        // ── Population ──────────────────────────────────────────────────
 
         private void PopulateLevel(int levelIndex)
         {
@@ -141,7 +141,7 @@ namespace KingSmash.UI.Screens
             foreach (Transform child in container) Destroy(child.gameObject);
         }
 
-        // ── Button handlers ────────────────────────────────────────────────────
+        // ── Button handlers ──────────────────────────────────────────────
 
         private void OnPlayClicked()
         {
@@ -158,7 +158,7 @@ namespace KingSmash.UI.Screens
             ScreenManager.Instance.Back();
         }
 
-        // ── Idle animation ─────────────────────────────────────────────────────
+        // ── Idle animation ───────────────────────────────────────────────
 
         private IEnumerator DelayedPlayPulse()
         {
@@ -194,7 +194,7 @@ namespace KingSmash.UI.Screens
             target.localScale = original;
         }
 
-        // ── Utilities ──────────────────────────────────────────────────────────
+        // ── Utilities ────────────────────────────────────────────────────
 
         private static void PlaySound(Audio.SoundId id)
         {

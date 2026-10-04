@@ -22,7 +22,6 @@ namespace KingSmash.UI
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
 
-            // Pre-warm pool
             for (int i = 0; i < PoolSize; i++)
             {
                 KSToast t = Instantiate(_toastPrefab, _toastContainer);
@@ -38,14 +37,14 @@ namespace KingSmash.UI
         {
             if (Instance == null) return;
             Sprite icon = Instance._theme != null ? Instance._theme.iconCoin : null;
-            Color  col  = Instance._theme != null ? Instance._theme.coinGold : new Color(1f, 0.82f, 0.09f);
+            Color  col  = Instance._theme != null ? Instance._theme.coinGold  : new Color(1f, 0.82f, 0.09f);
             Instance.Show("+" + amount + " Coins", icon, col);
         }
 
         public static void ShowGem(int amount)
         {
             if (Instance == null) return;
-            Sprite icon = Instance._theme != null ? Instance._theme.iconGem : null;
+            Sprite icon = Instance._theme != null ? Instance._theme.iconGem   : null;
             Color  col  = Instance._theme != null ? Instance._theme.gemPurple : new Color(0.62f, 0.25f, 0.92f);
             Instance.Show("+" + amount + " Gems", icon, col);
         }
@@ -94,10 +93,9 @@ namespace KingSmash.UI
 
         private KSToast GetFromPool()
         {
-            if (_pool.Count > 0)
-                return _pool.Dequeue();
+            if (_pool.Count > 0) return _pool.Dequeue();
 
-            // All busy — reuse oldest (first in list that is active)
+            // All busy — steal the first active one
             for (int i = 0; i < _allToasts.Count; i++)
             {
                 if (_allToasts[i] != null && _allToasts[i].gameObject.activeSelf)

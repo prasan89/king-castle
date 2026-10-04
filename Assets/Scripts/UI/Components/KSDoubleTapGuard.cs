@@ -1,39 +1,58 @@
+using System.Collections;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace KingSmash.UI.Components
 {
     /// <summary>
-    /// Requires two taps within the window to trigger; ignores single rapid taps.
-    /// Attach to any UI element that should require confirmation before action.
+    /// Prevents accidental double-taps by imposing a cooldown on a Button.
+    /// Attach to the same GameObject as the Button you want to guard.
+    /// During the cooldown window, the Button is set non-interactable,
+    /// then automatically restored.
     /// </summary>
-    public class KSDoubleTapGuard : MonoBehaviour, IPointerClickHandler
+    [RequireComponent(typeof(Button))]
+    public class KSDoubleTapGuard : MonoBehaviour
     {
-        [SerializeField] private float _windowSeconds = 0.4f;
+        [SerializeField] private float _cooldown = 0.5f;
 
-        private float _lastTapTime = -999f;
-        private int   _tapCount;
+        private Button    _button;
+        private float     _lastClickTime = -999f;
+        private Coroutine _restoreCoroutine;
 
-        public System.Action OnDoubleTap;
+        private void Awake()
+        {
+            _button = GetComponent<Button>();
+            _button.onClick.AddListener(OnButtonClicked);
+        }
 
-        public void OnPointerClick(PointerEventData eventData)
+        private void OnDestroy()
+        {
+            if (_button != null)
+                _button.onClick.RemoveListener(OnButtonClicked);
+        }
+
+        private void OnButtonClicked()
         {
             float now = Time.unscaledTime;
-            if (now - _lastTapTime <= _windowSeconds)
+            if (now - _lastClickTime < _cooldown)
             {
-                _tapCount++;
-                if (_tapCount >= 2)
-                {
-                    _tapCount    = 0;
-                    _lastTapTime = -999f;
-                    OnDoubleTap?.Invoke();
-                }
+                // Within cooldown — consume (already blocked by interactable = false below)
+                return;
             }
-            else
-            {
-                _tapCount = 1;
-            }
-            _lastTapTime = now;
+
+            _lastClickTime = now;
+
+            // Disable for cooldown then restore
+            if (_restoreCoroutine != null) StopCoroutine(_restoreCoroutine);
+            _restoreCoroutine = StartCoroutine(DisableForCooldown());
+        }
+
+        private IEnumerator DisableForCooldown()
+        {
+            if (_button != null) _button.interactable = false;
+            yield return new WaitForSecondsRealtime(_cooldown);
+            if (_button != null) _button.interactable = true;
+            _restoreCoroutine = null;
         }
     }
 }

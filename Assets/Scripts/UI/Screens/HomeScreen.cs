@@ -11,7 +11,7 @@ namespace KingSmash.UI.Screens
 {
     public class HomeScreen : UIScreen
     {
-        // ── Existing fields (preserved) ─────────────────────────────────────────
+        // ── Existing fields (preserved) ────────────────────────────────────────
 
         [Header("Top Bar")]
         [SerializeField] private TextMeshProUGUI _kingLevelLabel;
@@ -33,7 +33,7 @@ namespace KingSmash.UI.Screens
         [SerializeField] private GameObject _missionsBadge;
         [SerializeField] private GameObject _achievementsBadge;
 
-        // ── M13 polish fields ──────────────────────────────────────────────────
+        // ── M13 polish fields ─────────────────────────────────────────────
 
         [Header("M13 Polish")]
         [SerializeField] private KingSmashTheme  _themeConfig;
@@ -50,7 +50,7 @@ namespace KingSmash.UI.Screens
         private Coroutine _playPulseCoroutine;
         private Coroutine _badgePulseCoroutine;
 
-        // ── Lifecycle ──────────────────────────────────────────────────────────
+        // ── Lifecycle ──────────────────────────────────────────────────
 
         protected override void Awake()
         {
@@ -87,12 +87,12 @@ namespace KingSmash.UI.Screens
             StopIdleCoroutines();
         }
 
-        // ── Event handlers (existing) ──────────────────────────────────────────
+        // ── Event handlers (existing) ─────────────────────────────────────────
 
         private void HandleDailyClaimed(DailyRewardResult result)   => RefreshBadges();
         private void HandleMissionClaimed(string id, MissionClaimResult r) => RefreshBadges();
 
-        // ── Data refresh (existing, preserved) ────────────────────────────────
+        // ── Data refresh (existing, preserved) ───────────────────────────────────
 
         public void RefreshBadges()
         {
@@ -192,7 +192,7 @@ namespace KingSmash.UI.Screens
             ScreenManager.Instance.Show<MissionsScreen>();
         }
 
-        // ── M13 Animation: Entrance ────────────────────────────────────────────
+        // ── M13 Animation: Entrance ──────────────────────────────────────────
 
         private IEnumerator EntranceAnimation()
         {
@@ -248,7 +248,7 @@ namespace KingSmash.UI.Screens
                 StartCoroutine(UIAnimationController.BounceReveal(_playButtonTransform, 0.3f));
         }
 
-        // ── M13 Animation: Idle ────────────────────────────────────────────────
+        // ── M13 Animation: Idle ────────────────────────────────────────────
 
         private void RestartIdleCoroutines()
         {
@@ -317,7 +317,7 @@ namespace KingSmash.UI.Screens
                 StartCoroutine(PulseScale(badge.transform, 1.25f, 0.2f));
         }
 
-        // ── Currency CountUp ───────────────────────────────────────────────────
+        // ── Currency CountUp ────────────────────────────────────────────────
 
         private IEnumerator CountUpCoins(long from, long to)
         {
@@ -349,7 +349,7 @@ namespace KingSmash.UI.Screens
             _gemsLabel.text = to.ToString();
         }
 
-        // ── Utilities ──────────────────────────────────────────────────────────
+        // ── Utilities ────────────────────────────────────────────────────
 
         private IEnumerator SlideAndFade(CanvasGroup cg, RectTransform rt, Vector2 from, Vector2 to, float dur)
         {

@@ -1,52 +1,69 @@
-using UnityEngine;
-using KingSmash.Core;
-using KingSmash.Gameplay;
-using KingSmash.Characters;
-using KingSmash.Levels;
-using KingSmash.Services;
-using KingSmash.Audio;
-using KingSmash.VFX;
+using System;
 
 namespace KingSmash.UI
 {
     /// <summary>
-    /// Bridges gameplay events to UI services (audio, VFX, toast, screen transitions).
-    /// Attach once to a persistent GameObject in the level scene.
+    /// Semantic UI event bridge -- keeps gameplay and economy systems decoupled from UI.
+    /// Fire methods from any system; subscribe in UI components to react.
     /// </summary>
-    public class UIEventBridge : MonoBehaviour
+    public static class UIEventBridge
     {
-        private void OnEnable()
+        // -- Events -----------------------------------------------------------
+
+        /// <summary>Fired whenever the player's coin balance changes.</summary>
+        public static event Action<long> OnCoinsChanged;
+
+        /// <summary>Fired whenever the player's gem balance changes.</summary>
+        public static event Action<int> OnGemsChanged;
+
+        /// <summary>Fired when the King levels up. Args: (previousLevel, newLevel).</summary>
+        public static event Action<int, int> OnKingLevelChanged;
+
+        /// <summary>Fired when stars are awarded at end of level.</summary>
+        public static event Action<int> OnStarsAwarded;
+
+        /// <summary>Fired when an achievement is unlocked. Arg: achievementId.</summary>
+        public static event Action<string> OnAchievementUnlocked;
+
+        /// <summary>Fired when a mission is completed. Arg: missionId.</summary>
+        public static event Action<string> OnMissionCompleted;
+
+        // -- Fire helpers -----------------------------------------------------
+
+        public static void FireCoinsChanged(long amount)
         {
-            LevelStateMachine.OnStateChanged   += HandleLevelState;
-            KingProjectile.OnKingLanded        += HandleKingLanded;
+            OnCoinsChanged?.Invoke(amount);
+            ToastService.ShowCoin(amount);
         }
 
-        private void OnDisable()
+        public static void FireGemsChanged(int amount)
         {
-            LevelStateMachine.OnStateChanged   -= HandleLevelState;
-            KingProjectile.OnKingLanded        -= HandleKingLanded;
+            OnGemsChanged?.Invoke(amount);
+            ToastService.ShowGem(amount);
         }
 
-        private void HandleLevelState(LevelState state)
+        public static void FireKingLevelChanged(int prev, int next)
         {
-            switch (state)
-            {
-                case LevelState.Complete:
-                    if (ServiceLocator.TryGet<IAudioService>(out var audioWin))
-                        audioWin.Play(SoundId.LevelComplete);
-                    break;
-
-                case LevelState.Failed:
-                    if (ServiceLocator.TryGet<IAudioService>(out var audioFail))
-                        audioFail.Play(SoundId.Defeat);
-                    break;
-            }
+            OnKingLevelChanged?.Invoke(prev, next);
         }
 
-        private void HandleKingLanded(KingProjectile king)
+        public static void FireStarsAwarded(int count)
         {
-            if (ServiceLocator.TryGet<IAudioService>(out var audio))
-                audio.Play(SoundId.KingLand);
+            OnStarsAwarded?.Invoke(count);
+        }
+
+        public static void FireAchievementUnlocked(string achievementId)
+        {
+            OnAchievementUnlocked?.Invoke(achievementId);
+            if (!string.IsNullOrEmpty(achievementId))
+                ToastService.ShowSuccess("Achievement Unlocked!");
+        }
+
+        public static void FireMissionCompleted(string missionId)
+        {
+            OnMissionCompleted?.Invoke(missionId);
+            if (!string.IsNullOrEmpty(missionId))
+                ToastService.ShowSuccess("Mission Complete!");
         }
     }
 }

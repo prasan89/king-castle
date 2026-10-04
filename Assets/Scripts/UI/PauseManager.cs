@@ -40,7 +40,6 @@ namespace KingSmash.UI
             _homeButton?.onClick.AddListener(OnHomeClicked);
             _restartButton?.onClick.AddListener(OnRestartClicked);
 
-            // Hide overlay initially
             if (_pauseOverlayCg != null)
             {
                 _pauseOverlayCg.alpha          = 0f;
@@ -54,12 +53,10 @@ namespace KingSmash.UI
 
         private void Start()
         {
-            // Record resting position of pause panel after layout is complete
             if (_pausePanel != null)
             {
-                _panelRestPos      = _pausePanel.anchoredPosition;
-                _panelPosRecorded  = true;
-                // Start hidden above screen
+                _panelRestPos     = _pausePanel.anchoredPosition;
+                _panelPosRecorded = true;
                 _pausePanel.anchoredPosition = _panelRestPos + Vector2.up * 200f;
             }
         }
@@ -109,27 +106,22 @@ namespace KingSmash.UI
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / dur);
                 if (_pauseOverlayCg != null) _pauseOverlayCg.alpha = Mathf.Lerp(0f, 1f, t);
-                if (_pausePanel != null)     _pausePanel.anchoredPosition = Vector2.Lerp(panelStart, panelEnd, t);
                 yield return null;
             }
 
             if (_pauseOverlayCg != null) _pauseOverlayCg.alpha = 1f;
-            if (_pausePanel != null) _pausePanel.anchoredPosition = panelEnd;
 
-            // Slide in panel from slightly above (second animation phase: 0.2s)
+            // Slide in panel with ease-out-back (0.2s unscaled)
             if (_pausePanel != null)
             {
                 elapsed = 0f;
-                Vector2 slideStart = panelEnd + Vector2.up * 40f;
-                _pausePanel.anchoredPosition = slideStart;
                 const float slideDur = 0.2f;
                 while (elapsed < slideDur)
                 {
                     elapsed += Time.unscaledDeltaTime;
                     float t = Mathf.Clamp01(elapsed / slideDur);
-                    // Ease out back
                     float eased = EaseOutBack(t);
-                    _pausePanel.anchoredPosition = Vector2.Lerp(slideStart, panelEnd, eased);
+                    _pausePanel.anchoredPosition = Vector2.Lerp(panelStart, panelEnd, eased);
                     yield return null;
                 }
                 _pausePanel.anchoredPosition = panelEnd;

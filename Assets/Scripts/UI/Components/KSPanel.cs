@@ -27,7 +27,7 @@ namespace KingSmash.UI.Components
 
             if (_hasShadow && _shadowComponent != null)
             {
-                _shadowComponent.effectColor  = _theme.shadowColor;
+                _shadowComponent.effectColor    = _theme.shadowColor;
                 _shadowComponent.effectDistance = _theme.shadowOffset;
             }
         }
@@ -41,8 +41,9 @@ namespace KingSmash.UI.Components
                 var rt = GetComponent<RectTransform>();
                 if (rt != null)
                     _animCoroutine = StartCoroutine(
-                        UIAnimationController.SlideIn(rt, _theme != null ? _theme.panelSlideDistance : 60f,
-                            _theme != null ? _theme.durationNormal : 0.25f));
+                        UIAnimationController.SlideIn(rt,
+                            _theme != null ? _theme.panelSlideDistance : 60f,
+                            _theme != null ? _theme.durationNormal      : 0.25f));
             }
         }
 
@@ -67,7 +68,7 @@ namespace KingSmash.UI.Components
         {
             yield return UIAnimationController.SlideOut(rt,
                 _theme != null ? _theme.panelSlideDistance : 60f,
-                _theme != null ? _theme.durationFast : 0.20f);
+                _theme != null ? _theme.durationFast        : 0.20f);
             gameObject.SetActive(false);
         }
     }

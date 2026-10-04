@@ -1,13 +1,22 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using KingSmash.Economy;
+using KingSmash.Services;
+using KingSmash.Audio;
+using KingSmash.UI.Components;
 
 namespace KingSmash.UI.Screens
 {
-    public class InsufficientCurrencyPopup : MonoBehaviour
+    /// <summary>
+    /// Polished modal shown when the player lacks sufficient currency.
+    /// UIScreen subclass — use ScreenManager to show/hide.
+    /// </summary>
+    public class InsufficientCurrencyPopup : UIScreen
     {
+        // -- Original fields --------------------------------------------------
         [SerializeField] private TextMeshProUGUI _titleLabel;
         [SerializeField] private TextMeshProUGUI _currentLabel;
         [SerializeField] private TextMeshProUGUI _requiredLabel;
@@ -15,50 +24,92 @@ namespace KingSmash.UI.Screens
         [SerializeField] private Button          _earnCoinsButton;
         [SerializeField] private Button          _closeButton;
 
+        // -- M13 polish fields ------------------------------------------------
+        [SerializeField] private KingSmashTheme    _themeConfig;
+        [SerializeField] private RectTransform     _popupPanel;
+        [SerializeField] private KSCurrencyDisplay _currentAmountDisplay;
+        [SerializeField] private KSCurrencyDisplay _requiredAmountDisplay;
+
         public static event Action OnEarnCoinsRequested;
 
-        private void Awake()
+        private Coroutine _animCoroutine;
+
+        protected override void Awake()
         {
+            base.Awake();
+
             if (_earnCoinsButton != null)
-                _earnCoinsButton.onClick.AddListener(OnEarnCoinsClicked);
+                _earnCoinsButton.onClick.AddListener(OnShopClicked);
 
             if (_closeButton != null)
-                _closeButton.onClick.AddListener(OnCloseClicked);
+                _closeButton.onClick.AddListener(Dismiss);
         }
 
         private void OnDestroy()
         {
             if (_earnCoinsButton != null)
-                _earnCoinsButton.onClick.RemoveListener(OnEarnCoinsClicked);
+                _earnCoinsButton.onClick.RemoveListener(OnShopClicked);
 
             if (_closeButton != null)
-                _closeButton.onClick.RemoveListener(OnCloseClicked);
+                _closeButton.onClick.RemoveListener(Dismiss);
         }
 
-        public void Show(CurrencyType type, long current, long required)
+        /// <summary>
+        /// Populate the popup with currency context.
+        /// Call before or after Show().
+        /// </summary>
+        public void Populate(CurrencyType type, long current, long required)
         {
-            if (_titleLabel    != null) _titleLabel.text    = "Not Enough " + type.ToString();
-            if (_currentLabel  != null) _currentLabel.text  = "You have: "  + CurrencyFormatter.Format(current);
-            if (_requiredLabel != null) _requiredLabel.text  = "You need: "  + CurrencyFormatter.Format(required);
+            if (_titleLabel     != null) _titleLabel.text     = "Not Enough " + type;
+            if (_currentLabel   != null) _currentLabel.text   = "You have: "  + CurrencyFormatter.Format(current);
+            if (_requiredLabel  != null) _requiredLabel.text  = "You need: "  + CurrencyFormatter.Format(required);
             if (_shortfallLabel != null) _shortfallLabel.text = "Short by: " + CurrencyFormatter.Format(required - current);
-
-            gameObject.SetActive(true);
         }
 
-        public void Hide()
+        // -- UIScreen overrides -----------------------------------------------
+
+        protected override void OnShow()
         {
-            gameObject.SetActive(false);
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.PopupOpen);
+
+            if (_popupPanel != null)
+            {
+                if (_animCoroutine != null) StopCoroutine(_animCoroutine);
+                _animCoroutine = StartCoroutine(UIAnimationController.BounceReveal(
+                    _popupPanel,
+                    _themeConfig != null ? _themeConfig.durationBounce : 0.35f));
+            }
         }
 
-        private void OnEarnCoinsClicked()
+        protected override void OnHide() { }
+
+        // -- Dismiss (animated) -----------------------------------------------
+
+        public void Dismiss()
+        {
+            if (_animCoroutine != null) StopCoroutine(_animCoroutine);
+            _animCoroutine = StartCoroutine(DismissCoroutine());
+        }
+
+        private IEnumerator DismissCoroutine()
+        {
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.PopupClose);
+
+            if (_popupPanel != null)
+                yield return UIAnimationController.SlideOut(_popupPanel);
+
+            Hide();
+        }
+
+        // -- Button handlers --------------------------------------------------
+
+        private void OnShopClicked()
         {
             OnEarnCoinsRequested?.Invoke();
-            Hide();
-        }
-
-        private void OnCloseClicked()
-        {
-            Hide();
+            ScreenManager.Instance?.Show<ShopScreen>();
+            Dismiss();
         }
     }
 }

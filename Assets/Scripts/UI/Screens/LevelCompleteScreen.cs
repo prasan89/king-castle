@@ -149,7 +149,6 @@ namespace KingSmash.UI.Screens
             if (_resultsPanel != null)
                 yield return StartCoroutine(UIAnimationController.SlideIn(_resultsPanel, 80f, 0.3f));
 
-            // Populate level number
             if (_levelNumberLabel != null)
                 _levelNumberLabel.text = $"Level {_currentLevelIndex + 1}";
 
@@ -171,7 +170,6 @@ namespace KingSmash.UI.Screens
                 }
             }
 
-            // Populate stats labels
             if (_destructionLabel != null)
                 _destructionLabel.text = $"{_result.DestructionRatio * 100f:F0}%";
             if (_enemiesLabel != null)
@@ -190,7 +188,6 @@ namespace KingSmash.UI.Screens
                 yield return StartCoroutine(UIAnimationController.CountUp(_coinsEarnedLabel, 0, _result.CoinsEarned, 0.8f));
             }
 
-            // CountUp XP
             long xpEarned = _result.XPEarned;
             if (_xpEarnedLabel != null)
             {
@@ -199,10 +196,9 @@ namespace KingSmash.UI.Screens
                     prefix: "+", suffix: " XP"));
             }
 
-            // Double reward panel
             yield return StartCoroutine(ShowDoubleRewardIfAvailableCoroutine());
 
-            // 8. If leveled up: SlideIn panel, BounceReveal, play Upgrade sound
+            // 8. If leveled up
             if (_leveledUpThisSession && _levelUpPanel != null)
             {
                 if (_levelUpLabel != null)

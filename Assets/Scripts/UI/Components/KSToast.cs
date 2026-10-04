@@ -26,7 +26,7 @@ namespace KingSmash.UI.Components
             if (_showCoroutine != null) StopCoroutine(_showCoroutine);
 
             if (_messageLabel != null) _messageLabel.text = message;
-            if (_iconImage    != null)
+            if (_iconImage != null)
             {
                 _iconImage.sprite  = icon;
                 _iconImage.enabled = icon != null;
@@ -43,14 +43,12 @@ namespace KingSmash.UI.Components
             const float slideOutDuration = 0.22f;
             const float slideDistance    = 80f;
 
-            // Position off-screen below
             Vector2 shownPos  = _rt.anchoredPosition;
             Vector2 hiddenPos = shownPos + Vector2.down * slideDistance;
             _rt.anchoredPosition = hiddenPos;
-
             if (_cg != null) _cg.alpha = 0f;
 
-            // Slide in from bottom and fade in
+            // Slide in + fade in
             float elapsed = 0f;
             while (elapsed < slideInDuration)
             {
@@ -66,7 +64,7 @@ namespace KingSmash.UI.Components
             // Hold
             yield return new WaitForSecondsRealtime(holdDuration);
 
-            // Slide out and fade out
+            // Slide out + fade out
             elapsed = 0f;
             while (elapsed < slideOutDuration)
             {
@@ -77,7 +75,7 @@ namespace KingSmash.UI.Components
                 yield return null;
             }
 
-            _rt.anchoredPosition = shownPos; // Reset for pool reuse
+            _rt.anchoredPosition = shownPos; // reset for pool reuse
             if (_cg != null) _cg.alpha = 0f;
             gameObject.SetActive(false);
         }

@@ -89,7 +89,7 @@ namespace KingSmash.UI.Screens
             while (elapsed < _progressDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                // Allow touch to skip bar but still show at least 80%
+                // Allow touch to skip bar
                 if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
                     elapsed = _progressDuration;
 

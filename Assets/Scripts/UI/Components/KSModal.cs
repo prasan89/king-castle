@@ -22,8 +22,8 @@ namespace KingSmash.UI.Components
         [SerializeField] private TextMeshProUGUI _confirmLabel;
         [SerializeField] private TextMeshProUGUI _cancelLabel;
 
-        private Action _onConfirm;
-        private Action _onCancel;
+        private Action   _onConfirm;
+        private Action   _onCancel;
         private Coroutine _animCoroutine;
 
         private static KSModal _instance;
@@ -59,13 +59,13 @@ namespace KingSmash.UI.Components
             _onConfirm = onConfirm;
             _onCancel  = onCancel;
 
-            if (_titleLabel != null) _titleLabel.text = title;
-            if (_bodyLabel  != null) _bodyLabel.text  = body;
+            if (_titleLabel   != null) _titleLabel.text   = title;
+            if (_bodyLabel    != null) _bodyLabel.text    = body;
             if (_confirmLabel != null) _confirmLabel.text = confirm;
 
             bool hasCancelButton = !string.IsNullOrEmpty(cancel);
-            if (_cancelButton  != null) _cancelButton.gameObject.SetActive(hasCancelButton);
-            if (_cancelLabel   != null && hasCancelButton) _cancelLabel.text = cancel;
+            if (_cancelButton != null) _cancelButton.gameObject.SetActive(hasCancelButton);
+            if (_cancelLabel  != null && hasCancelButton) _cancelLabel.text = cancel;
 
             gameObject.SetActive(true);
 

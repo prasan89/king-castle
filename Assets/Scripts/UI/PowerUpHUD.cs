@@ -80,11 +80,9 @@ namespace KingSmash.UI
             _activeType = type;
             UpdatePulse(type);
 
-            // Brief screen flash on activation
             if (_screenFlash != null)
                 _screenFlash.Flash(new Color(1f, 0.9f, 0.2f, 0.5f), 0.08f);
 
-            // BounceReveal activation feedback on the card
             var card = FindCard(type);
             if (card?.Root != null)
                 StartCoroutine(UIAnimationController.BounceReveal(card.Root, 0.25f));
@@ -126,11 +124,9 @@ namespace KingSmash.UI
 
             bool available = count > 0;
 
-            // Update count label
             if (card.CountLabel != null)
                 card.CountLabel.text = count > 0 ? count.ToString() : "0";
 
-            // Dim unavailable cards to 0.4 alpha, show lock overlay
             if (card.CardCg != null)
                 card.CardCg.alpha = available ? 1f : 0.4f;
 
@@ -145,14 +141,12 @@ namespace KingSmash.UI
 
         private void UpdatePulse(PowerUpType type)
         {
-            // Stop existing pulse
             if (_pulseCoroutine != null)
             {
                 StopCoroutine(_pulseCoroutine);
                 _pulseCoroutine = null;
             }
 
-            // Reset all card scales
             foreach (var c in _cards)
                 if (c.Root != null) c.Root.localScale = Vector3.one;
 
@@ -166,8 +160,8 @@ namespace KingSmash.UI
         private IEnumerator PulseActive(RectTransform rt)
         {
             if (rt == null) yield break;
-            const float minScale = 1.0f;
-            const float maxScale = 1.05f;
+            const float minScale   = 1.0f;
+            const float maxScale   = 1.05f;
             const float halfPeriod = 0.6f;
 
             while (true)

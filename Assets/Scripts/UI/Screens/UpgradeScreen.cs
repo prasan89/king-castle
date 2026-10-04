@@ -6,15 +6,13 @@ using KingSmash.Core;
 using KingSmash.Progression;
 using KingSmash.Services;
 using KingSmash.Economy;
+using KingSmash.Audio;
+using KingSmash.UI.Components;
 
 namespace KingSmash.UI.Screens
 {
     public class UpgradeScreen : UIScreen
     {
-        // ------------------------------------------------------------------
-        // Serialized fields
-        // ------------------------------------------------------------------
-
         [Header("King Status")]
         [SerializeField] private TextMeshProUGUI _kingLevelLabel;
         [SerializeField] private TextMeshProUGUI _kingXpLabel;
@@ -33,27 +31,26 @@ namespace KingSmash.UI.Screens
         [SerializeField] private KingUpgradeConfig _upgradeConfig;
 
         [Header("Navigation")]
-        [SerializeField] private Button     _backButton;
+        [SerializeField] private Button _backButton;
 
         [Header("Art")]
         [SerializeField] private GameObject _kingArtPlaceholder;
 
-        // ------------------------------------------------------------------
-        // Private state
-        // ------------------------------------------------------------------
+        [Header("M13 Theme & Animation")]
+        [SerializeField] private KingSmashTheme _themeConfig;
+        [SerializeField] private CanvasGroup _screenCg;
+        [SerializeField] private KSProgressBar _xpProgressBar;
+        [SerializeField] private RectTransform _kingArtPanel;
+        [SerializeField] private Animator _kingReactionAnimator;
+        [SerializeField] private ParticleSystem _upgradeParticles;
 
-        private KingUpgradeService    _upgradeService;
+        private KingUpgradeService     _upgradeService;
         private KingProgressionService _progressionService;
-
-        // ------------------------------------------------------------------
-        // Unity lifecycle
-        // ------------------------------------------------------------------
 
         protected override void Awake()
         {
             base.Awake();
             _backButton?.onClick.AddListener(OnBackClicked);
-
             _powerRow?.SetupButton(OnUpgradePower);
             _speedRow?.SetupButton(OnUpgradeSpeed);
             _smashRow?.SetupButton(OnUpgradeSmash);
@@ -62,24 +59,20 @@ namespace KingSmash.UI.Screens
 
         private void OnEnable()
         {
-            KingUpgradeService.OnStatUpgraded       += OnStatUpgradedHandler;
-            KingProgressionService.OnKingLevelUp    += OnKingLevelUpHandler;
+            KingUpgradeService.OnStatUpgraded    += OnStatUpgradedHandler;
+            KingProgressionService.OnKingLevelUp += OnKingLevelUpHandler;
         }
 
         private void OnDisable()
         {
-            KingUpgradeService.OnStatUpgraded       -= OnStatUpgradedHandler;
-            KingProgressionService.OnKingLevelUp    -= OnKingLevelUpHandler;
+            KingUpgradeService.OnStatUpgraded    -= OnStatUpgradedHandler;
+            KingProgressionService.OnKingLevelUp -= OnKingLevelUpHandler;
         }
 
         private void OnDestroy()
         {
             _backButton?.onClick.RemoveListener(OnBackClicked);
         }
-
-        // ------------------------------------------------------------------
-        // UIScreen overrides
-        // ------------------------------------------------------------------
 
         protected override void OnShow()
         {
@@ -89,25 +82,102 @@ namespace KingSmash.UI.Screens
                 analytics.LogEvent(AnalyticsEvents.UpgradeScreenOpened);
 
             RefreshAll();
+            StartCoroutine(PlayShowAnimation());
         }
 
-        // ------------------------------------------------------------------
-        // Event handlers
-        // ------------------------------------------------------------------
+        private IEnumerator PlayShowAnimation()
+        {
+            if (_screenCg != null)
+            {
+                _screenCg.alpha = 0f;
+                yield return UIAnimationController.Fade(_screenCg, 0f, 1f, 0.2f);
+            }
+
+            if (_kingArtPanel != null)
+            {
+                Vector2 orig = _kingArtPanel.anchoredPosition;
+                _kingArtPanel.anchoredPosition = orig + Vector2.left * 120f;
+                StartCoroutine(UIAnimationController.SlideIn(_kingArtPanel, -120f, 0.3f));
+            }
+
+            var rows = new Transform[] {
+                _powerRow != null ? _powerRow.transform : null,
+                _speedRow != null ? _speedRow.transform : null,
+                _smashRow != null ? _smashRow.transform : null,
+                _armorRow != null ? _armorRow.transform : null
+            };
+
+            for (int i = 0; i < rows.Length; i++)
+            {
+                if (rows[i] == null) continue;
+                int captured = i;
+                StartCoroutine(DelayedSlideInFromRight(rows[captured], captured * 0.06f));
+            }
+
+            if (_kingXpLabel != null && _progressionService != null)
+            {
+                long currentXP = _progressionService.KingXP;
+                long xpForNext = _progressionService.XPRequiredForNextLevel(_progressionService.KingLevel);
+                yield return UIAnimationController.CountUp(_kingXpLabel, 0L, currentXP, 0.6f, "", $" / {xpForNext:N0} XP");
+            }
+        }
+
+        private static IEnumerator DelayedSlideInFromRight(Transform target, float delay)
+        {
+            if (delay > 0f) yield return new WaitForSecondsRealtime(delay);
+            var rt = target as RectTransform ?? target.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                Vector2 orig = rt.anchoredPosition;
+                rt.anchoredPosition = orig + Vector2.right * 80f;
+                yield return UIAnimationController.SlideIn(rt, 80f, 0.25f);
+            }
+        }
 
         private void OnStatUpgradedHandler(KingStat stat, int oldLevel, int newLevel, float oldVal, float newVal, long cost)
         {
             RefreshAll();
+
+            UpgradeStatRow affectedRow = stat switch
+            {
+                KingStat.Power       => _powerRow,
+                KingStat.Speed       => _speedRow,
+                KingStat.SmashRadius => _smashRow,
+                KingStat.Armor       => _armorRow,
+                _                    => null
+            };
+
+            if (affectedRow != null)
+                StartCoroutine(UIAnimationController.BounceReveal(affectedRow.transform, 0.30f));
+
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.Upgrade);
+
+            ToastService.ShowMessage("UPGRADED!");
+
+            if (_upgradeParticles != null)
+                StartCoroutine(BriefParticles());
+        }
+
+        private IEnumerator BriefParticles()
+        {
+            _upgradeParticles.Play();
+            yield return new WaitForSeconds(1.2f);
+            _upgradeParticles.Stop();
         }
 
         private void OnKingLevelUpHandler(int oldLevel, int newLevel, KingStats stats)
         {
             RefreshKingLevelDisplay();
-        }
 
-        // ------------------------------------------------------------------
-        // Upgrade button callbacks
-        // ------------------------------------------------------------------
+            if (_kingArtPanel != null)
+                StartCoroutine(UIAnimationController.BounceReveal(_kingArtPanel, 0.35f));
+            else if (_kingArtPlaceholder != null)
+                StartCoroutine(UIAnimationController.BounceReveal(_kingArtPlaceholder.transform, 0.35f));
+
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.Reward);
+        }
 
         private void OnUpgradePower() => TryUpgrade(KingStat.Power);
         private void OnUpgradeSpeed() => TryUpgrade(KingStat.Speed);
@@ -122,18 +192,18 @@ namespace KingSmash.UI.Screens
                 return;
             }
 
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.ButtonClick);
+
             var result = _upgradeService.TryUpgradeStat(stat);
 
             if (result != UpgradeResult.Success)
             {
                 GameLogger.Warning("UpgradeScreen", $"Upgrade failed for {stat}: {result}");
                 ShakeCoinsLabel();
+                ToastService.ShowError("Not enough coins");
             }
         }
-
-        // ------------------------------------------------------------------
-        // Refresh helpers
-        // ------------------------------------------------------------------
 
         private void RefreshAll()
         {
@@ -156,9 +226,9 @@ namespace KingSmash.UI.Screens
         {
             if (_progressionService == null) return;
 
-            int  kingLevel = _progressionService.KingLevel;
-            long currentXP = _progressionService.KingXP;
-            long xpForNext = _progressionService.XPRequiredForNextLevel(kingLevel);
+            int  kingLevel  = _progressionService.KingLevel;
+            long currentXP  = _progressionService.KingXP;
+            long xpForNext  = _progressionService.XPRequiredForNextLevel(kingLevel);
             bool isMaxLevel = kingLevel >= _progressionService.MaxKingLevel;
 
             if (_kingLevelLabel != null)
@@ -167,16 +237,22 @@ namespace KingSmash.UI.Screens
             if (isMaxLevel)
             {
                 if (_kingXpLabel != null) _kingXpLabel.text = "MAX";
-                if (_kingXpBar  != null) _kingXpBar.value   = 1f;
+                if (_kingXpBar   != null) _kingXpBar.value  = 1f;
+                _xpProgressBar?.SetProgress(1f, animated: true);
+                _xpProgressBar?.SetLabel("MAX");
             }
             else
             {
                 if (_kingXpLabel != null)
                     _kingXpLabel.text = $"{currentXP:N0} / {xpForNext:N0} XP";
+
+                float xpFraction = xpForNext > 0 ? Mathf.Clamp01((float)currentXP / xpForNext) : 0f;
+
                 if (_kingXpBar != null)
-                    _kingXpBar.value = xpForNext > 0
-                        ? Mathf.Clamp01((float)currentXP / xpForNext)
-                        : 0f;
+                    _kingXpBar.value = xpFraction;
+
+                _xpProgressBar?.SetProgress(xpFraction, animated: true);
+                _xpProgressBar?.SetLabel($"{currentXP:N0} / {xpForNext:N0}");
             }
         }
 
@@ -185,7 +261,6 @@ namespace KingSmash.UI.Screens
             if (row == null) return;
             if (_upgradeService == null)
             {
-                // Fallback: show row in disabled state without preview data.
                 row.Refresh(displayName, 1, 0, 0);
                 return;
             }
@@ -194,54 +269,20 @@ namespace KingSmash.UI.Screens
             long playerCoins = save.Current.coins;
 
             var preview = _upgradeService.GetUpgradePreview(stat);
-            row.Refresh(
-                displayName,
-                preview.currentLevel,
-                preview.cost,
-                playerCoins);
+            row.Refresh(displayName, preview.currentLevel, preview.cost, playerCoins);
         }
-
-        // ------------------------------------------------------------------
-        // Coin shake feedback
-        // ------------------------------------------------------------------
 
         private void ShakeCoinsLabel()
         {
-            if (_coinsLabel == null) return;
-            StartCoroutine(ShakeTransform(_coinsLabel.rectTransform, 6f, 0.4f));
+            if (_coinsLabel != null)
+                StartCoroutine(UIAnimationController.Shake(_coinsLabel.transform, 8f, 0.3f));
         }
-
-        private static IEnumerator ShakeTransform(RectTransform rt, float magnitude, float duration)
-        {
-            Vector2 originalPos = rt.anchoredPosition;
-            float elapsed = 0f;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = elapsed / duration;
-                float dampen = 1f - t;
-                float offsetX = Random.Range(-magnitude, magnitude) * dampen;
-                float offsetY = Random.Range(-magnitude * 0.5f, magnitude * 0.5f) * dampen;
-                rt.anchoredPosition = originalPos + new Vector2(offsetX, offsetY);
-                yield return null;
-            }
-
-            rt.anchoredPosition = originalPos;
-        }
-
-        // ------------------------------------------------------------------
-        // Navigation
-        // ------------------------------------------------------------------
 
         private void OnBackClicked()
         {
+            if (ServiceLocator.TryGet<IAudioService>(out var audio)) audio.Play(SoundId.Back);
             ScreenManager.Instance.Back();
         }
-
-        // ------------------------------------------------------------------
-        // Service resolution
-        // ------------------------------------------------------------------
 
         private void ResolveServices()
         {

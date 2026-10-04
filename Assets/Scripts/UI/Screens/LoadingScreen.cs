@@ -1,67 +1,102 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
-using KingSmash.Core;
-using KingSmash.Services;
-using KingSmash.Audio;
+using KingSmash.UI.Components;
 
 namespace KingSmash.UI.Screens
 {
+    /// <summary>
+    /// Full-screen loading screen with spinner, hint label, progress bar, and floating king art.
+    /// </summary>
     public class LoadingScreen : UIScreen
     {
-        [SerializeField] private UI.Components.KSLoadingSpinner _spinner;
-        [SerializeField] private TMP_Text  _tipText;
-        [SerializeField] private Slider    _progressBar;
-        [SerializeField] private CanvasGroup _canvasGroup;
+        [SerializeField] private KingSmashTheme   _themeConfig;
+        [SerializeField] private KSProgressBar    _progressBar;
+        [SerializeField] private TextMeshProUGUI  _hintLabel;
+        [SerializeField] private KSLoadingSpinner _spinner;
+        [SerializeField] private RectTransform    _kingArtTransform;
 
-        private static readonly string[] Tips =
+        private static readonly string[] Hints =
         {
-            "Aim for weak points to deal more damage!",
-            "Upgrade the King to unlock new abilities.",
-            "Chaining combos multiplies your score.",
-            "Daily rewards grow the longer you play!",
-            "Boss levels drop rare materials."
+            "Aim for the weak spots!",
+            "Power-ups can change everything!",
+            "Rescue the Queen to complete levels!",
+            "Upgrade your King to smash harder!",
+            "Chain explosions for maximum destruction!",
+            "3 stars means perfect destruction!",
+            "Daily rewards grow with your streak!",
+            "Complete missions to earn bonus coins!",
+            "Ice smash freezes enemies!",
+            "The Final Castle awaits..."
         };
+
+        private Coroutine _floatCoroutine;
+        private Coroutine _progressCoroutine;
 
         protected override void OnShow()
         {
-            if (_tipText != null)
-                _tipText.text = Tips[Random.Range(0, Tips.Length)];
-
-            if (_progressBar != null)
-                _progressBar.value = 0f;
-
+            // Show spinner
             if (_spinner != null)
-                _spinner.gameObject.SetActive(true);
+                _spinner.Show();
+
+            // Show a random hint
+            if (_hintLabel != null)
+                _hintLabel.text = Hints[UnityEngine.Random.Range(0, Hints.Length)];
+
+            // Reset progress bar to 0
+            if (_progressBar != null)
+                _progressBar.SetProgress(0f, animated: false);
+
+            // Start floating king art
+            if (_kingArtTransform != null)
+            {
+                if (_floatCoroutine != null) StopCoroutine(_floatCoroutine);
+                _floatCoroutine = StartCoroutine(FloatKingArt());
+            }
         }
 
         protected override void OnHide()
         {
             if (_spinner != null)
-                _spinner.gameObject.SetActive(false);
+                _spinner.Hide();
+
+            if (_floatCoroutine != null)
+            {
+                StopCoroutine(_floatCoroutine);
+                _floatCoroutine = null;
+            }
+
+            if (_progressCoroutine != null)
+            {
+                StopCoroutine(_progressCoroutine);
+                _progressCoroutine = null;
+            }
         }
 
+        /// <summary>Updates the progress bar (0-1).</summary>
         public void SetProgress(float normalized)
         {
             if (_progressBar != null)
-                _progressBar.value = Mathf.Clamp01(normalized);
+                _progressBar.SetProgress(Mathf.Clamp01(normalized));
         }
 
-        public IEnumerator FadeOutAndHide()
+        // Sinusoidal float for king art
+        private IEnumerator FloatKingArt()
         {
-            if (_canvasGroup == null) { Hide(); yield break; }
+            if (_kingArtTransform == null) yield break;
 
-            float elapsed = 0f;
-            const float dur = 0.25f;
-            while (elapsed < dur)
+            Vector2 origin    = _kingArtTransform.anchoredPosition;
+            float   amplitude = 12f;
+            float   speed     = 1.2f;
+            float   elapsed   = 0f;
+
+            while (true)
             {
-                elapsed += Time.unscaledDeltaTime;
-                _canvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / dur);
+                elapsed += Time.unscaledDeltaTime * speed;
+                float offset = Mathf.Sin(elapsed) * amplitude;
+                _kingArtTransform.anchoredPosition = origin + new Vector2(0f, offset);
                 yield return null;
             }
-            _canvasGroup.alpha = 0f;
-            Hide();
         }
     }
 }

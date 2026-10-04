@@ -51,7 +51,7 @@ namespace KingSmash.UI
             yield return FadeFromBlackCoroutine(halfDuration);
         }
 
-        // ── Public coroutine API ───────────────────────────────────────────────
+        // ── Public coroutine API ────────────────────────────────────────────────
 
         public Coroutine FadeToBlack(float duration = 0.2f)
         {
@@ -107,14 +107,12 @@ namespace KingSmash.UI
             await tcs.Task;
         }
 
-        private IEnumerator TransitionCoroutine(Action midpoint, float halfDuration, TaskCompletionSource<bool> tcs)
+        private IEnumerator TransitionCoroutine(
+            Action midpoint, float halfDuration, TaskCompletionSource<bool> tcs)
         {
             yield return FadeToBlackCoroutine(halfDuration);
             try { midpoint?.Invoke(); }
-            catch (Exception e)
-            {
-                UnityEngine.Debug.LogException(e);
-            }
+            catch (Exception e) { UnityEngine.Debug.LogException(e); }
             yield return FadeFromBlackCoroutine(halfDuration);
             tcs.SetResult(true);
         }

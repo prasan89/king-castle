@@ -11,7 +11,7 @@ namespace KingSmash.UI.Widgets
 {
     public class LevelNodeWidget : MonoBehaviour
     {
-        // ── Existing fields (preserved) ─────────────────────────────────────────
+        // ── Existing fields (preserved) ────────────────────────────────────────
 
         [SerializeField] private Button              _button;
         [SerializeField] private TextMeshProUGUI     _levelLabel;
@@ -19,7 +19,7 @@ namespace KingSmash.UI.Widgets
         [SerializeField] private GameObject          _lockIcon;
         [SerializeField] private Image               _nodeBackground;
 
-        // ── M13 Polish fields ──────────────────────────────────────────────────
+        // ── M13 Polish fields ──────────────────────────────────────────────
 
         [Header("M13 Polish")]
         [SerializeField] private KingSmashTheme  _themeConfig;
@@ -29,7 +29,7 @@ namespace KingSmash.UI.Widgets
 
         private Coroutine _glowPulseCoroutine;
 
-        // ── Public API ─────────────────────────────────────────────────────────
+        // ── Public API ──────────────────────────────────────────────────
 
         /// <summary>
         /// Original 4-argument overload — kept for backwards compatibility.
@@ -117,7 +117,7 @@ namespace KingSmash.UI.Widgets
             }
         }
 
-        // ── Idle glow pulse for current level ──────────────────────────────────
+        // ── Idle glow pulse for current level ──────────────────────────────
 
         private IEnumerator GlowPulse()
         {

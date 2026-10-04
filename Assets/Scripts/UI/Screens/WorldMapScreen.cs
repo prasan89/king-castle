@@ -11,7 +11,7 @@ namespace KingSmash.UI.Screens
 {
     public class WorldMapScreen : UIScreen
     {
-        // ── Existing fields (preserved) ─────────────────────────────────────────
+        // ── Existing fields (preserved) ────────────────────────────────────────
 
         [Header("Navigation")]
         [SerializeField] private Button _backButton;
@@ -37,14 +37,14 @@ namespace KingSmash.UI.Screens
         [SerializeField] private GameObject      _worldLockedOverlay;
         [SerializeField] private TextMeshProUGUI _requiredStarsLabel;
 
-        // ── M13 Polish fields ──────────────────────────────────────────────────
+        // ── M13 Polish fields ──────────────────────────────────────────────
 
         [Header("M13 Polish")]
         [SerializeField] private KingSmashTheme _themeConfig;
         [SerializeField] private RectTransform  _worldInfoPanel;
         [SerializeField] private ScrollRect     _levelScrollRect;
 
-        // ── State ──────────────────────────────────────────────────────────────
+        // ── State ──────────────────────────────────────────────────────
 
         private int _selectedWorldIndex = 0;
         private readonly List<LevelNodeWidget> _spawnedNodes = new();
@@ -54,7 +54,7 @@ namespace KingSmash.UI.Screens
         private static readonly Color ColorInProgress  = new Color(1.00f, 0.75f, 0.10f);
         private static readonly Color ColorCompleted   = new Color(0.18f, 0.72f, 0.25f);
 
-        // ── Lifecycle ──────────────────────────────────────────────────────────
+        // ── Lifecycle ──────────────────────────────────────────────────
 
         protected override void Awake()
         {
@@ -101,7 +101,7 @@ namespace KingSmash.UI.Screens
                     _themeConfig != null ? _themeConfig.durationNormal : 0.25f));
         }
 
-        // ── Tab management ──────────────────────────────────────────────────────
+        // ── Tab management ───────────────────────────────────────────────
 
         private void RefreshAllWorldTabs()
         {
@@ -185,7 +185,7 @@ namespace KingSmash.UI.Screens
             }
         }
 
-        // ── Level node construction ─────────────────────────────────────────────
+        // ── Level node construction ───────────────────────────────────────────
 
         private void RebuildLevelNodes(WorldDefinition world, ISaveService save)
         {
@@ -244,7 +244,7 @@ namespace KingSmash.UI.Screens
             }
         }
 
-        // ── Button handlers ────────────────────────────────────────────────────
+        // ── Button handlers ──────────────────────────────────────────────
 
         private void OnLevelNodeClicked(int levelIndex)
         {
@@ -268,7 +268,7 @@ namespace KingSmash.UI.Screens
             ScreenManager.Instance.Show<PowerUpShopScreen>();
         }
 
-        // ── Utilities ──────────────────────────────────────────────────────────
+        // ── Utilities ────────────────────────────────────────────────────
 
         private static void PlaySound(Audio.SoundId id)
         {

@@ -21,14 +21,14 @@ namespace KingSmash.UI.Components
     [RequireComponent(typeof(Button))]
     public class KSButton : MonoBehaviour
     {
-        [SerializeField] private KingSmashTheme _theme;
-        [SerializeField] private ButtonStyle    _style = ButtonStyle.Primary;
-        [SerializeField] private Image          _background;
+        [SerializeField] private KingSmashTheme  _theme;
+        [SerializeField] private ButtonStyle     _style = ButtonStyle.Primary;
+        [SerializeField] private Image           _background;
         [SerializeField] private TextMeshProUGUI _label;
-        [SerializeField] private Image          _icon;
-        [SerializeField] private bool           _playSound = true;
+        [SerializeField] private Image           _icon;
+        [SerializeField] private bool            _playSound = true;
 
-        private Button   _button;
+        private Button    _button;
         private Coroutine _scaleCoroutine;
         private bool      _isPressed;
 
@@ -37,7 +37,6 @@ namespace KingSmash.UI.Components
             _button = GetComponent<Button>();
             _button.onClick.AddListener(OnButtonClicked);
 
-            // Wire EventTrigger for press/release feedback
             var trigger = GetComponent<EventTrigger>();
             if (trigger == null) trigger = gameObject.AddComponent<EventTrigger>();
 
@@ -90,21 +89,11 @@ namespace KingSmash.UI.Components
 
             switch (style)
             {
-                case ButtonStyle.Primary:
-                    _background.color = _theme.primaryButton;
-                    break;
-                case ButtonStyle.Secondary:
-                    _background.color = _theme.secondaryButton;
-                    break;
-                case ButtonStyle.Danger:
-                    _background.color = _theme.dangerButton;
-                    break;
-                case ButtonStyle.Ghost:
-                    _background.color = new Color(1f, 1f, 1f, 0.1f);
-                    break;
-                case ButtonStyle.Icon:
-                    _background.color = Color.clear;
-                    break;
+                case ButtonStyle.Primary:   _background.color = _theme.primaryButton;  break;
+                case ButtonStyle.Secondary: _background.color = _theme.secondaryButton; break;
+                case ButtonStyle.Danger:    _background.color = _theme.dangerButton;   break;
+                case ButtonStyle.Ghost:     _background.color = new Color(1f, 1f, 1f, 0.1f); break;
+                case ButtonStyle.Icon:      _background.color = Color.clear; break;
             }
 
             if (_label != null) _label.color = _theme.textPrimary;
@@ -123,7 +112,7 @@ namespace KingSmash.UI.Components
                 if (_background != null)
                     _background.color = interactable
                         ? (_theme != null ? GetStyleColor(_style) : _background.color)
-                        : (_theme != null ? _theme.disabledColor : Color.gray);
+                        : (_theme != null ? _theme.disabledColor  : Color.gray);
             }
         }
 
@@ -152,9 +141,9 @@ namespace KingSmash.UI.Components
 
         private IEnumerator LerpScale(float targetUniform, float duration)
         {
-            Vector3 start = transform.localScale;
-            Vector3 end   = Vector3.one * targetUniform;
-            float elapsed = 0f;
+            Vector3 start   = transform.localScale;
+            Vector3 end     = Vector3.one * targetUniform;
+            float   elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;

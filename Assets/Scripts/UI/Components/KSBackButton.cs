@@ -1,39 +1,40 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using KingSmash.Core;
 using KingSmash.Services;
 using KingSmash.Audio;
 
 namespace KingSmash.UI.Components
 {
-    [RequireComponent(typeof(Button))]
-    public class KSBackButton : MonoBehaviour, IPointerClickHandler
+    /// <summary>
+    /// Reusable Android back / hardware-back handler.
+    /// Listens for the Escape key each frame and optionally wires an on-screen Button.
+    /// </summary>
+    public class KSBackButton : MonoBehaviour
     {
-        [SerializeField] private bool _playSound = true;
-
-        private Button _button;
+        [SerializeField] private Button _uiButton;
 
         private void Awake()
         {
-            _button = GetComponent<Button>();
-            _button.onClick.AddListener(OnBack);
+            if (_uiButton != null)
+                _uiButton.onClick.AddListener(OnBackPressed);
         }
 
         private void OnDestroy()
         {
-            _button.onClick.RemoveListener(OnBack);
+            if (_uiButton != null)
+                _uiButton.onClick.RemoveListener(OnBackPressed);
         }
 
-        public void OnPointerClick(PointerEventData eventData) { }
-
-        private void OnBack()
+        private void Update()
         {
-            if (_playSound)
-            {
-                if (ServiceLocator.TryGet<IAudioService>(out var audio))
-                    audio.Play(SoundId.Back);
-            }
+            if (Input.GetKeyDown(KeyCode.Escape))
+                OnBackPressed();
+        }
+
+        public void OnBackPressed()
+        {
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+                audio.Play(SoundId.Back);
 
             ScreenManager.Instance?.Back();
         }

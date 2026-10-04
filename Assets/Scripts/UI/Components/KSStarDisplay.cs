@@ -34,7 +34,6 @@ namespace KingSmash.UI.Components
 
         private IEnumerator AnimateStars(int count)
         {
-            // Reset visible scale to zero for filled stars before animating
             for (int i = 0; i < count && i < _starImages.Count; i++)
             {
                 if (_starImages[i] != null)

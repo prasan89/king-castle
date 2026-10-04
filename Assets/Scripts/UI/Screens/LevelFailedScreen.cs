@@ -84,7 +84,6 @@ namespace KingSmash.UI.Screens
                 ? $"{_result.AttemptsRemaining} attempts remaining"
                 : "No attempts remaining!";
 
-            // Show random tip
             if (_tipLabel != null)
                 _tipLabel.text = s_Tips[UnityEngine.Random.Range(0, s_Tips.Length)];
 
@@ -100,7 +99,6 @@ namespace KingSmash.UI.Screens
                 yield return StartCoroutine(UIAnimationController.Fade(_screenCg, 0f, 1f, 0.15f));
             }
 
-            // Play fail sound
             if (ServiceLocator.TryGet<IAudioService>(out var audio))
                 audio.Play(SoundId.LevelFail);
 
@@ -116,8 +114,7 @@ namespace KingSmash.UI.Screens
                 {
                     elapsed += Time.unscaledDeltaTime;
                     float t = Mathf.Clamp01(elapsed / dur);
-                    // Ease out
-                    t = 1f - (1f - t) * (1f - t);
+                    t = 1f - (1f - t) * (1f - t); // ease out quad
                     _failPanel.anchoredPosition = Vector2.Lerp(start, end, t);
                     yield return null;
                 }
@@ -141,7 +138,7 @@ namespace KingSmash.UI.Screens
                 StartCoroutine(UIAnimationController.BounceReveal(_homeButton.transform, 0.3f));
             }
 
-            // 5. Show extra attempt panel with pulse if available
+            // 5. Show extra attempt panel
             if (_extraAttemptPanel != null)
                 StartCoroutine(ShowExtraAttemptCoroutine());
         }
@@ -159,7 +156,6 @@ namespace KingSmash.UI.Screens
 
             _extraAttemptPanel.Show(availability);
 
-            // Gentle pulse on the extra attempt panel to draw attention
             StartCoroutine(PulsePanel(_extraAttemptPanel.transform));
 
             ExtraAttemptPanel.OnExtraAttemptAccepted += HandleExtraAttemptAccepted;
@@ -205,7 +201,6 @@ namespace KingSmash.UI.Screens
             if (target == null) yield break;
             const float pulseScale = 1.04f;
             const float halfDur    = 0.55f;
-            // Pulse 3 times then stop
             for (int i = 0; i < 3; i++)
             {
                 float e = 0f;

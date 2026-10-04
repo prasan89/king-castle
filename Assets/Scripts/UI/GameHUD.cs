@@ -174,7 +174,6 @@ namespace KingSmash.UI
 
         private IEnumerator DimIcon(Transform icon, CanvasGroup cg)
         {
-            // Shrink and dim used icon
             float elapsed = 0f;
             const float dur = 0.15f;
             Vector3 originalScale = icon.localScale;
@@ -271,7 +270,6 @@ namespace KingSmash.UI
             _enemiesRemaining = Mathf.Max(0, _enemiesRemaining - 1);
             UpdateEnemyLabel();
 
-            // Brief white flash on enemy defeat
             if (_screenFlash != null)
                 _screenFlash.Flash(new Color(1f, 1f, 1f, 0.6f), 0.05f);
         }

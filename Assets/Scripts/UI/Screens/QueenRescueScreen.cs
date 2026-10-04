@@ -97,7 +97,7 @@ namespace KingSmash.UI.Screens
                 _queenImage.anchoredPosition = queenStartPos;
             }
 
-            // 1. Fade screen in (0.3s) with dark overlay
+            // 1. Fade screen in (0.3s)
             if (_screenCg != null)
             {
                 _screenCg.alpha = 0f;
@@ -117,7 +117,7 @@ namespace KingSmash.UI.Screens
                 {
                     elapsed += Time.unscaledDeltaTime;
                     float t     = Mathf.Clamp01(elapsed / slideDur);
-                    float eased = 1f - Mathf.Pow(1f - t, 3f); // cubic ease out
+                    float eased = 1f - Mathf.Pow(1f - t, 3f);
                     if (_kingImage  != null) _kingImage.anchoredPosition  = Vector2.Lerp(kingStartPos,  kingEndPos,  eased);
                     if (_queenImage != null) _queenImage.anchoredPosition = Vector2.Lerp(queenStartPos, queenEndPos, eased);
                     yield return null;

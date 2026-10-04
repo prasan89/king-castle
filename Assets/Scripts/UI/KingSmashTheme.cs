@@ -27,10 +27,10 @@ namespace KingSmash.UI
         public Vector2 shadowOffset = new Vector2(2f, -3f);
 
         [Header("Animation Extended")]
-        public float durationBounce          = 0.35f;
-        public float durationCountUp         = 0.8f;
+        public float durationBounce           = 0.35f;
+        public float durationCountUp          = 0.8f;
         public float durationScreenTransition = 0.22f;
-        public AnimationCurve easeOutBack    = new AnimationCurve(
+        public AnimationCurve easeOutBack = new AnimationCurve(
             new Keyframe(0f,   0f),
             new Keyframe(0.7f, 1.1f),
             new Keyframe(1f,   1f)
@@ -42,10 +42,10 @@ namespace KingSmash.UI
         );
 
         [Header("Layout")]
-        public float safeAreaPadding  = 20f;
-        public float bottomNavHeight  = 120f;
-        public float topBarHeight     = 100f;
-        public float cardCornerRadius = 20f;
+        public float safeAreaPadding   = 20f;
+        public float bottomNavHeight   = 120f;
+        public float topBarHeight      = 100f;
+        public float cardCornerRadius  = 20f;
         public float modalCornerRadius = 28f;
     }
 }

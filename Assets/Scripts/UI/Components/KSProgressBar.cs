@@ -26,13 +26,9 @@ namespace KingSmash.UI.Components
             if (_progressCoroutine != null) StopCoroutine(_progressCoroutine);
 
             if (animated && gameObject.activeInHierarchy)
-            {
                 _progressCoroutine = StartCoroutine(LerpProgress(value, duration));
-            }
             else
-            {
                 if (_slider != null) _slider.value = value;
-            }
         }
 
         public void SetLabel(string text)
@@ -56,8 +52,8 @@ namespace KingSmash.UI.Components
 
             while (elapsed < duration)
             {
-                elapsed      += Time.unscaledDeltaTime;
-                _slider.value = Mathf.Lerp(startValue, targetValue, elapsed / duration);
+                elapsed       += Time.unscaledDeltaTime;
+                _slider.value  = Mathf.Lerp(startValue, targetValue, elapsed / duration);
                 yield return null;
             }
             _slider.value = targetValue;

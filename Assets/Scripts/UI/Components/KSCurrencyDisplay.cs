@@ -68,7 +68,6 @@ namespace KingSmash.UI.Components
 
         private void OnCurrencyChanged(long newBalance, CurrencyTransaction tx)
         {
-            // Only react to coin changes for now; gem events would use a separate service
             if (_currencyType == CurrencyType.Coins)
                 SetAmount(newBalance, animated: true, fromAmount: _currentAmount);
         }
