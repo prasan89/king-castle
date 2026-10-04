@@ -12,6 +12,8 @@ using KingSmash.Services.Firebase;
 using KingSmash.Audio;
 using KingSmash.VFX;
 using KingSmash.Camera;
+using KingSmash.Analytics;
+using KingSmash.Config;
 
 namespace KingSmash.Core
 {
@@ -54,6 +56,11 @@ namespace KingSmash.Core
             ServiceLocator.Register<ISaveService>(new LocalSaveService());
             ServiceLocator.Register<IConfigService>(new RemoteConfigServiceMock());
             ServiceLocator.Register<IAnalyticsService>(new AnalyticsServiceMock());
+
+            // ── Crash reporting ───────────────────────────────────────────────
+            ServiceLocator.Register<ICrashReportingService>(new MockCrashReportingService());
+            GameLogger.SetCrashService(ServiceLocator.Get<ICrashReportingService>());
+
             ServiceLocator.Register<IAuthService>(new AuthServiceMock());
             ServiceLocator.Register<IPlayerDataService>(new PlayerDataServiceMock());
             ServiceLocator.Register<IPurchaseService>(new PurchaseServiceMock());
@@ -101,6 +108,13 @@ namespace KingSmash.Core
                 ServiceLocator.Get<IAuthService>(),
                 ServiceLocator.Get<IConfigService>());
             ServiceLocator.Register<CloudSyncService>(cloudSyncService);
+
+            // ── Analytics environment and config version ──────────────────────
+            if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
+            {
+                analytics.SetEnvironment(FirebaseEnvironmentConfig.Environment);
+                analytics.SetConfigVersion("1");
+            }
 
             var upgradeConfig = Resources.Load<KingUpgradeConfig>("KingUpgradeConfig");
             if (upgradeConfig == null)

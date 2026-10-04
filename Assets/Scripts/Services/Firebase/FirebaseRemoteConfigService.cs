@@ -1,40 +1,46 @@
 // FirebaseRemoteConfigService — implements IConfigService.
 // Real implementation gated on #if FIREBASE_ENABLED.
-// Stub compiles without the Firebase SDK.
+// Stub compiles cleanly without the Firebase SDK.
+// M14: added IsFeatureEnabled, GetConfigVersion, OnConfigFetched,
+//      timeout handling, and RemoteConfigValidator on all numeric getters.
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using KingSmash.Config;
 using KingSmash.Core;
 
 namespace KingSmash.Services.Firebase
 {
     public class FirebaseRemoteConfigService : IConfigService
     {
-        private readonly Dictionary<string, string> _defaults = new()
+        // ── Fetch timeout ────────────────────────────────────────────────────
+        private const float FetchTimeoutSeconds = 10f;
+
+        // ── Defaults ─────────────────────────────────────────────────────────
+        // Start from the full M14 defaults, then layer any legacy / extra keys
+        // that were present before M14 but are not yet in RemoteConfigKeys.
+        private readonly Dictionary<string, string> _defaults;
+
+        public FirebaseRemoteConfigService()
         {
-            // ── RemoteConfigServiceMock keys ────────────────────────────────
-            ["ads_enabled"]            = "true",
-            ["daily_reward_enabled"]   = "true",
-            ["coins_multiplier"]       = "1.0",
-            ["new_content_available"]  = "false",
+            _defaults = RemoteConfigDefaults.GetAll();
 
-            // ── M10 keys ────────────────────────────────────────────────────
-            ["interstitial_min_interval"]      = "120",
-            ["rewarded_ad_cooldown"]           = "30",
-            ["mission_refresh_interval_hours"] = "24",
-            ["achievement_event_batch_size"]   = "10",
+            // ── Legacy / extra M9–M11 keys not covered by RemoteConfigKeys ───
+            // These remain here for backward compatibility with older Firebase
+            // console entries. Add to RemoteConfigKeys in a future milestone
+            // when they are fully migrated.
+            _defaults["coins_multiplier"]              = "1.0";   // legacy alias
+            _defaults["new_content_available"]         = "false";
+            _defaults["interstitial_min_interval"]     = "120";
+            _defaults["achievement_event_batch_size"]  = "10";
+            _defaults["cloud_sync_interval_seconds"]   = "300";
+            _defaults["conflict_resolution_strategy"]  = "Merged";
+        }
 
-            // ── Ad policy keys ──────────────────────────────────────────────
-            ["ad_interstitial_min_levels"]          = "3",
-            ["ad_max_interstitials_per_session"]     = "5",
-            ["ad_interstitial_min_session_seconds"]  = "60",
+        // ── IConfigService: OnConfigFetched ───────────────────────────────────
+        public event System.Action OnConfigFetched;
 
-            // ── M11 keys ────────────────────────────────────────────────────
-            ["cloud_save_enabled"]           = "true",
-            ["cloud_sync_interval_seconds"]  = "300",
-            ["google_signin_enabled"]        = "true",
-            ["conflict_resolution_strategy"] = "Merged",
-        };
+        // ── IConfigService: Lifecycle ─────────────────────────────────────────
 
         public void Initialize()
         {
@@ -48,12 +54,14 @@ namespace KingSmash.Services.Firebase
                 .ContinueWith(t =>
                 {
                     if (t.IsFaulted)
-                        GameLogger.Error("FirebaseRemoteConfig", $"SetDefaults failed: {t.Exception?.Message}");
+                        GameLogger.Error("FirebaseRemoteConfig",
+                            $"SetDefaults failed: {t.Exception?.Message}");
                     else
                         GameLogger.Info("FirebaseRemoteConfig", "Defaults applied.");
                 });
 #else
-            GameLogger.Info("FirebaseRemoteConfig", "Initialized with local defaults (Firebase disabled).");
+            GameLogger.Info("FirebaseRemoteConfig",
+                "Initialized with local defaults (Firebase disabled).");
 #endif
         }
 
@@ -62,9 +70,24 @@ namespace KingSmash.Services.Firebase
 #if FIREBASE_ENABLED
             try
             {
-                await global::Firebase.RemoteConfig.FirebaseRemoteConfig.DefaultInstance
+                var fetchTask = global::Firebase.RemoteConfig.FirebaseRemoteConfig.DefaultInstance
                     .FetchAndActivateAsync();
+
+                var timeoutTask = Task.Delay((int)(FetchTimeoutSeconds * 1000));
+                var completed   = await Task.WhenAny(fetchTask, timeoutTask);
+
+                if (completed == timeoutTask)
+                {
+                    GameLogger.LogWarning("FirebaseRemoteConfig",
+                        $"FetchAsync timed out after {FetchTimeoutSeconds}s — using cached/default values.");
+                    return;
+                }
+
+                // Propagate any exception from the fetch task.
+                await fetchTask;
+
                 GameLogger.Info("FirebaseRemoteConfig", "Fetch-and-activate complete.");
+                OnConfigFetched?.Invoke();
             }
             catch (System.Exception ex)
             {
@@ -72,14 +95,18 @@ namespace KingSmash.Services.Firebase
             }
 #else
             GameLogger.Info("FirebaseRemoteConfig", "Fetch skipped (Firebase disabled).");
+            OnConfigFetched?.Invoke();
             await Task.CompletedTask;
 #endif
         }
 
+        // ── IConfigService: Value accessors ───────────────────────────────────
+
         public string GetString(string key, string defaultValue = "")
         {
 #if FIREBASE_ENABLED
-            var value = global::Firebase.RemoteConfig.FirebaseRemoteConfig.DefaultInstance.GetValue(key);
+            var value = global::Firebase.RemoteConfig.FirebaseRemoteConfig
+                            .DefaultInstance.GetValue(key);
             return string.IsNullOrEmpty(value.StringValue) ? defaultValue : value.StringValue;
 #else
             return _defaults.TryGetValue(key, out var v) ? v : defaultValue;
@@ -87,18 +114,64 @@ namespace KingSmash.Services.Firebase
         }
 
         public int GetInt(string key, int defaultValue = 0)
-            => int.TryParse(GetString(key, defaultValue.ToString()), out var v) ? v : defaultValue;
+        {
+            int raw = int.TryParse(
+                GetString(key, defaultValue.ToString()),
+                out var parsed) ? parsed : defaultValue;
+
+            return RemoteConfigValidator.ValidateInt(
+                key, raw, defaultValue, min: int.MinValue + 1, max: int.MaxValue - 1);
+        }
 
         public float GetFloat(string key, float defaultValue = 0f)
-            => float.TryParse(
+        {
+            float raw = float.TryParse(
                 GetString(key, defaultValue.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : defaultValue;
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var parsed) ? parsed : defaultValue;
+
+            return RemoteConfigValidator.ValidateFloat(
+                key, raw, defaultValue, min: float.MinValue / 2f, max: float.MaxValue / 2f).Value;
+        }
 
         public bool GetBool(string key, bool defaultValue = false)
-            => bool.TryParse(GetString(key, defaultValue.ToString()), out var v) ? v : defaultValue;
+        {
+            string raw = GetString(key, defaultValue.ToString());
+            return RemoteConfigValidator.ValidateBool(key, raw, defaultValue);
+        }
 
         public string GetJson(string key, string defaultJson = "{}")
             => GetString(key, defaultJson);
+
+        // ── IConfigService: Feature Flags (M14) ───────────────────────────────
+
+        public bool IsFeatureEnabled(FeatureFlag feature)
+        {
+            string key = FeatureFlagToKey(feature);
+            return GetBool(key, defaultValue: true);
+        }
+
+        // ── IConfigService: Versioning (M14) ──────────────────────────────────
+
+        public string GetConfigVersion()
+            => GetString(RemoteConfigKeys.ConfigVersion, "1");
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        private static string FeatureFlagToKey(FeatureFlag feature) => feature switch
+        {
+            FeatureFlag.PowerUps          => RemoteConfigKeys.PowerupsEnabled,
+            FeatureFlag.DailyRewards      => RemoteConfigKeys.DailyRewardEnabled,
+            FeatureFlag.Missions          => RemoteConfigKeys.MissionEnabled,
+            FeatureFlag.Achievements      => RemoteConfigKeys.AchievementEnabled,
+            FeatureFlag.Shop              => RemoteConfigKeys.ShopEnabled,
+            FeatureFlag.RewardedContinue  => RemoteConfigKeys.RewardedContinueEnabled,
+            FeatureFlag.InterstitialAds   => RemoteConfigKeys.InterstitialEnabled,
+            FeatureFlag.Tutorial          => RemoteConfigKeys.NewUserTutorialEnabled,
+            FeatureFlag.CloudSave         => RemoteConfigKeys.CloudSaveEnabled,
+            FeatureFlag.GoogleSignIn      => RemoteConfigKeys.GoogleSignInEnabled,
+            _                             => RemoteConfigKeys.AdsEnabled, // safe fallback
+        };
     }
 }
