@@ -29,8 +29,12 @@ namespace KingSmash.Gameplay
 
         private Transform _target;
         private Vector3 _defaultPosition;
-        private bool _following;
-        private bool _shaking;
+        private bool    _following;
+        private bool    _shaking;
+
+        // Additive shake offset injected by CameraEffectService (M12+).
+        // Kept separate from position logic so follow/return math is unaffected.
+        private Vector3 _shakeOffset;
 
         private void Awake()
         {
@@ -81,7 +85,16 @@ namespace KingSmash.Gameplay
                 Mathf.Clamp(_target.position.y + _followOffset.y, _minY, _maxY),
                 _followOffset.z);
 
-            transform.position = Vector3.Lerp(transform.position, desired, _followSpeed * Time.deltaTime);
+            transform.position = Vector3.Lerp(transform.position, desired, _followSpeed * Time.deltaTime) + _shakeOffset;
+        }
+
+        /// <summary>
+        /// Called each frame by CameraEffectService to inject an additive shake displacement.
+        /// Set to Vector3.zero to clear the shake.
+        /// </summary>
+        public void AddShakeOffset(Vector3 offset)
+        {
+            _shakeOffset = offset;
         }
 
         private IEnumerator ReturnToDefault()
@@ -120,8 +133,9 @@ namespace KingSmash.Gameplay
         public void ResetToDefault()
         {
             StopAllCoroutines();
-            _following = false;
-            _shaking   = false;
+            _following   = false;
+            _shaking     = false;
+            _shakeOffset = Vector3.zero;
             transform.position = new Vector3(_defaultPosition.x, _defaultPosition.y, _followOffset.z);
         }
     }

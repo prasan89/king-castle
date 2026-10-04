@@ -9,6 +9,9 @@ using KingSmash.Shop;
 using KingSmash.Ads;
 using KingSmash.Retention;
 using KingSmash.Services.Firebase;
+using KingSmash.Audio;
+using KingSmash.VFX;
+using KingSmash.Camera;
 
 namespace KingSmash.Core
 {
@@ -54,13 +57,44 @@ namespace KingSmash.Core
             ServiceLocator.Register<IAuthService>(new AuthServiceMock());
             ServiceLocator.Register<IPlayerDataService>(new PlayerDataServiceMock());
             ServiceLocator.Register<IPurchaseService>(new PurchaseServiceMock());
-            ServiceLocator.Register<IAudioService>(new AudioManager());
 
-            // ── Cloud save (mock for dev; swap CloudSaveServiceMock for FirebaseCloudSaveService in prod) ──
+            // ── Audio (MonoBehaviour) ─────────────────────────────────────────
+            var audioService = FindObjectOfType<AudioService>();
+            if (audioService != null)
+            {
+                ServiceLocator.Register<IAudioService>(audioService);
+            }
+            else
+            {
+                GameLogger.Warning("GameBootstrap", "AudioService MonoBehaviour not found in scene — falling back to AudioManager stub.");
+                ServiceLocator.Register<IAudioService>(new AudioManager());
+            }
+
+            // ── VFX (MonoBehaviour) ───────────────────────────────────────────
+            var vfxService = FindObjectOfType<VFXService>();
+            if (vfxService != null)
+                ServiceLocator.Register<IVFXService>(vfxService);
+            else
+                GameLogger.Warning("GameBootstrap", "VFXService MonoBehaviour not found in scene.");
+
+            // ── CameraEffect (MonoBehaviour) ──────────────────────────────────
+            var cameraEffectService = FindObjectOfType<CameraEffectService>();
+            if (cameraEffectService != null)
+                ServiceLocator.Register<ICameraEffectService>(cameraEffectService);
+            else
+                GameLogger.Warning("GameBootstrap", "CameraEffectService MonoBehaviour not found in scene.");
+
+            // ── HitStop (MonoBehaviour) ───────────────────────────────────────
+            var hitStopService = FindObjectOfType<Gameplay.HitStopService>();
+            if (hitStopService != null)
+                ServiceLocator.Register<Gameplay.IHitStopService>(hitStopService);
+            else
+                GameLogger.Warning("GameBootstrap", "HitStopService MonoBehaviour not found in scene.");
+
+            // ── Cloud save (mock for dev; swap for FirebaseCloudSaveService in prod) ──
             var cloudSaveMock = new CloudSaveServiceMock();
             ServiceLocator.Register<ICloudSaveService>(cloudSaveMock);
 
-            // ── Cloud sync service ────────────────────────────────────────────
             var cloudSyncService = new CloudSyncService(
                 ServiceLocator.Get<ICloudSaveService>(),
                 ServiceLocator.Get<ISaveService>(),

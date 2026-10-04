@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using TMPro;
 using KingSmash.Core;
 using KingSmash.Services;
+using KingSmash.Audio;
+
 namespace KingSmash.UI.Screens
 {
     public class SettingsScreen : UIScreen
@@ -14,6 +16,11 @@ namespace KingSmash.UI.Screens
         [SerializeField] private Toggle _musicToggle;
         [SerializeField] private Toggle _sfxToggle;
         [SerializeField] private Toggle _vibrationToggle;
+        [SerializeField] private Toggle _muteToggle;
+
+        [Header("Audio Sliders")]
+        [SerializeField] private Slider _musicVolumeSlider;
+        [SerializeField] private Slider _sfxVolumeSlider;
 
         [Header("Graphics")]
         [SerializeField] private TextMeshProUGUI _graphicsValueLabel;
@@ -30,6 +37,8 @@ namespace KingSmash.UI.Screens
         private readonly string[] _graphicsOptions = { "High", "Medium", "Low" };
         private int _graphicsIndex = 0;
 
+        private bool _suppressCallbacks;
+
         protected override void Awake()
         {
             base.Awake();
@@ -37,6 +46,9 @@ namespace KingSmash.UI.Screens
             _musicToggle?.onValueChanged.AddListener(OnMusicToggled);
             _sfxToggle?.onValueChanged.AddListener(OnSfxToggled);
             _vibrationToggle?.onValueChanged.AddListener(OnVibrationToggled);
+            _muteToggle?.onValueChanged.AddListener(OnMuteToggled);
+            _musicVolumeSlider?.onValueChanged.AddListener(OnMusicVolumeChanged);
+            _sfxVolumeSlider?.onValueChanged.AddListener(OnSfxVolumeChanged);
             _graphicsCycleButton?.onClick.AddListener(OnGraphicsCycle);
             _privacyPolicyButton?.onClick.AddListener(OnPrivacyPolicy);
             _termsButton?.onClick.AddListener(OnTerms);
@@ -47,25 +59,84 @@ namespace KingSmash.UI.Screens
         {
             if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
                 analytics.LogEvent(AnalyticsEvents.SettingsOpened);
+
             UpdateGraphicsLabel();
             if (_languageLabel != null) _languageLabel.text = "English";
+
+            LoadAudioValues();
+        }
+
+        private void LoadAudioValues()
+        {
+            if (!ServiceLocator.TryGet<IAudioService>(out var audio))
+                return;
+
+            _suppressCallbacks = true;
+
+            if (_musicVolumeSlider != null)
+                _musicVolumeSlider.value = audio.MusicVolume;
+
+            if (_sfxVolumeSlider != null)
+                _sfxVolumeSlider.value = audio.SfxVolume;
+
+            if (_muteToggle != null)
+                _muteToggle.isOn = audio.IsMuted;
+
+            if (_musicToggle != null)
+                _musicToggle.isOn = audio.MusicVolume > 0f && !audio.IsMuted;
+
+            if (_sfxToggle != null)
+                _sfxToggle.isOn = audio.SfxVolume > 0f && !audio.IsMuted;
+
+            _suppressCallbacks = false;
+        }
+
+        private void OnMusicVolumeChanged(float value)
+        {
+            if (_suppressCallbacks) return;
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+            {
+                audio.SetMusicVolume(value);
+                AudioSettingsPersistence.Save(audio.MusicVolume, audio.SfxVolume, audio.IsMuted);
+            }
+        }
+
+        private void OnSfxVolumeChanged(float value)
+        {
+            if (_suppressCallbacks) return;
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+            {
+                audio.SetSfxVolume(value);
+                AudioSettingsPersistence.Save(audio.MusicVolume, audio.SfxVolume, audio.IsMuted);
+            }
+        }
+
+        private void OnMuteToggled(bool value)
+        {
+            if (_suppressCallbacks) return;
+            if (ServiceLocator.TryGet<IAudioService>(out var audio))
+            {
+                audio.SetMuted(value);
+                AudioSettingsPersistence.Save(audio.MusicVolume, audio.SfxVolume, audio.IsMuted);
+            }
         }
 
         private void OnMusicToggled(bool value)
         {
+            if (_suppressCallbacks) return;
             if (ServiceLocator.TryGet<IAudioService>(out var audio))
                 audio.SetMusicVolume(value ? 1f : 0f);
         }
 
         private void OnSfxToggled(bool value)
         {
+            if (_suppressCallbacks) return;
             if (ServiceLocator.TryGet<IAudioService>(out var audio))
                 audio.SetSfxVolume(value ? 1f : 0f);
         }
 
         private void OnVibrationToggled(bool value)
         {
-            // Vibration handled by platform haptics — placeholder
             GameLogger.Info("SettingsScreen", $"Vibration: {value}");
         }
 
@@ -97,6 +168,9 @@ namespace KingSmash.UI.Screens
             _musicToggle?.onValueChanged.RemoveListener(OnMusicToggled);
             _sfxToggle?.onValueChanged.RemoveListener(OnSfxToggled);
             _vibrationToggle?.onValueChanged.RemoveListener(OnVibrationToggled);
+            _muteToggle?.onValueChanged.RemoveListener(OnMuteToggled);
+            _musicVolumeSlider?.onValueChanged.RemoveListener(OnMusicVolumeChanged);
+            _sfxVolumeSlider?.onValueChanged.RemoveListener(OnSfxVolumeChanged);
             _graphicsCycleButton?.onClick.RemoveListener(OnGraphicsCycle);
             _privacyPolicyButton?.onClick.RemoveListener(OnPrivacyPolicy);
             _termsButton?.onClick.RemoveListener(OnTerms);
