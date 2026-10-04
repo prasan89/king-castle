@@ -40,5 +40,21 @@ namespace KingSmash.Characters
         public float stunDurationOnHeavyHit = 1.5f;
         public float GetMaxHPAtLevel(int level) => maxHP + hpPerLevel * (level - 1);
         public float GetImpactDamageAtLevel(int level) => impactDamage + impactDamagePerLevel * (level - 1);
+
+        public float GetRuntimePower(KingSmash.Progression.KingStats stats)
+            => baseLaunchPower + stats.Power;
+        public float GetRuntimeSpeed(KingSmash.Progression.KingStats stats)
+            => baseLaunchSpeed + stats.Speed;
+        public float GetRuntimeSmashRadius(KingSmash.Progression.KingStats stats)
+            => baseSmashRadius + stats.SmashRadius;
+        public float GetRuntimeArmor(KingSmash.Progression.KingStats stats)
+            => baseArmor + stats.Armor;
+
+        public static KingSmash.Progression.KingStats LoadCurrentStats()
+        {
+            if (!KingSmash.Core.ServiceLocator.TryGet<KingSmash.Progression.KingProgressionService>(out var svc))
+                return KingSmash.Progression.KingStats.Zero;
+            return svc.GetCurrentStats();
+        }
     }
 }

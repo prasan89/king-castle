@@ -1,3 +1,5 @@
+using KingSmash.PowerUps;
+
 namespace KingSmash.UI
 {
     public class LevelResult
@@ -10,8 +12,11 @@ namespace KingSmash.UI
         public int   TotalEnemies;
         public bool  QueenRescued;
         public long  CoinsEarned;
+        public long  XPEarned;
         public bool  IsVictory;
         public string FailReason;
         public int   AttemptsRemaining;
+        public PowerUpType[] PowerUpsUsed;
+        public int   PowerUpActivationCount;
     }
 }

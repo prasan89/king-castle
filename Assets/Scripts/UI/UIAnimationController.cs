@@ -5,6 +5,21 @@ namespace KingSmash.UI
 {
     public static class UIAnimationController
     {
+        // Shake a transform horizontally (insufficient funds feedback)
+        public static IEnumerator Shake(Transform target, float magnitude = 8f, float duration = 0.3f)
+        {
+            Vector3 original = target.localPosition;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float x = UnityEngine.Random.Range(-1f, 1f) * magnitude * (1f - elapsed / duration);
+                target.localPosition = original + new Vector3(x, 0f, 0f);
+                yield return null;
+            }
+            target.localPosition = original;
+        }
+
         // Punch-scale a button on press
         public static IEnumerator ButtonPress(Transform target, float scaleTo = 0.92f, float duration = 0.08f)
         {

@@ -1,140 +1,225 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using KingSmash.Core;
+using KingSmash.Shop;
+using KingSmash.Economy;
 using KingSmash.Services;
+using KingSmash.Core;
+
 namespace KingSmash.UI.Screens
 {
-    [Serializable]
-    public class ShopItem
-    {
-        public string productId;
-        public string displayName;
-        public string priceDisplay;
-        public long coinsGranted;
-        public int gemsGranted;
-    }
-
     public class ShopScreen : UIScreen
     {
         [Header("Navigation")]
         [SerializeField] private Button _backButton;
 
         [Header("Tabs")]
-        [SerializeField] private Button _coinsTab;
-        [SerializeField] private Button _gemsTab;
-        [SerializeField] private Button _specialTab;
+        [SerializeField] private Button _coinsTabButton;
+        [SerializeField] private Button _gemsTabButton;
+        [SerializeField] private Button _specialTabButton;
 
-        [Header("Currency")]
-        [SerializeField] private TextMeshProUGUI _coinsLabel;
-        [SerializeField] private TextMeshProUGUI _gemsLabel;
+        [Header("Tab Indicators")]
+        [SerializeField] private GameObject _coinsTabActive;
+        [SerializeField] private GameObject _gemsTabActive;
+        [SerializeField] private GameObject _specialTabActive;
 
-        [Header("Content")]
-        [SerializeField] private GameObject _coinPanel;
-        [SerializeField] private GameObject _gemPanel;
+        [Header("Currency Header")]
+        [SerializeField] private TextMeshProUGUI _coinsHeaderLabel;
+        [SerializeField] private TextMeshProUGUI _gemsHeaderLabel;
+
+        [Header("Panels")]
+        [SerializeField] private GameObject _coinsPanel;
+        [SerializeField] private GameObject _gemsPanel;
         [SerializeField] private GameObject _specialPanel;
 
-        [Header("Shop Cards")]
+        [Header("Card Containers")]
         [SerializeField] private Transform _coinCardContainer;
         [SerializeField] private Transform _gemCardContainer;
-        [SerializeField] private ShopCardWidget _shopCardPrefab;
+        [SerializeField] private Transform _specialCardContainer;
 
-        [Header("Special")]
-        [SerializeField] private Button _removeAdsButton;
-        [SerializeField] private TextMeshProUGUI _removeAdsPriceLabel;
+        [Header("Prefab")]
+        [SerializeField] private KingSmash.UI.Widgets.ShopCardWidget _cardPrefab;
 
-        private readonly List<ShopItem> _coinItems = new()
-        {
-            new ShopItem { productId = "coins_1000",  displayName = "1,000 Coins",  priceDisplay = "₹99",  coinsGranted = 1000  },
-            new ShopItem { productId = "coins_5000",  displayName = "5,000 Coins",  priceDisplay = "₹299", coinsGranted = 5000  },
-            new ShopItem { productId = "coins_15000", displayName = "15,000 Coins", priceDisplay = "₹499", coinsGranted = 15000 },
-            new ShopItem { productId = "coins_50000", displayName = "50,000 Coins", priceDisplay = "₹999", coinsGranted = 50000 },
-        };
+        [Header("Overlays")]
+        [SerializeField] private GameObject _loadingOverlay;
 
-        private readonly List<ShopItem> _gemItems = new()
-        {
-            new ShopItem { productId = "gems_10",  displayName = "10 Gems",  priceDisplay = "₹99",  gemsGranted = 10  },
-            new ShopItem { productId = "gems_50",  displayName = "50 Gems",  priceDisplay = "₹299", gemsGranted = 50  },
-            new ShopItem { productId = "gems_100", displayName = "100 Gems", priceDisplay = "₹499", gemsGranted = 100 },
-            new ShopItem { productId = "gems_500", displayName = "500 Gems", priceDisplay = "₹999", gemsGranted = 500 },
-        };
+        [Header("Restore")]
+        [SerializeField] private Button _restorePurchasesButton;
+
+        [Header("Catalog")]
+        [SerializeField] private ShopProductCatalog _catalog;
+
+        [Header("Modals")]
+        [SerializeField] private PurchaseSuccessModal _successModal;
+        [SerializeField] private PurchaseFailureModal _failureModal;
+
+        private ShopService _shopService;
+        private readonly List<KingSmash.UI.Widgets.ShopCardWidget> _spawnedCards = new();
 
         protected override void Awake()
         {
             base.Awake();
             _backButton?.onClick.AddListener(OnBackClicked);
-            _coinsTab?.onClick.AddListener(() => ShowTab(0));
-            _gemsTab?.onClick.AddListener(() => ShowTab(1));
-            _specialTab?.onClick.AddListener(() => ShowTab(2));
-            _removeAdsButton?.onClick.AddListener(OnRemoveAdsClicked);
+            _coinsTabButton?.onClick.AddListener(OnCoinsTabClicked);
+            _gemsTabButton?.onClick.AddListener(OnGemsTabClicked);
+            _specialTabButton?.onClick.AddListener(OnSpecialTabClicked);
+            _restorePurchasesButton?.onClick.AddListener(OnRestoreClicked);
         }
 
         protected override void OnShow()
         {
-            RefreshCurrency();
-            BuildShopCards();
+            ServiceLocator.TryGet<ShopService>(out _shopService);
+            RefreshCurrencyHeader();
             ShowTab(0);
+            CurrencyService.OnCoinsChanged += OnCoinsChangedHandler;
+
+            if (_shopService != null && !_shopService.IsInitialized)
+            {
+                if (_loadingOverlay != null) _loadingOverlay.SetActive(true);
+                InitializeShopAsync();
+            }
+            else
+            {
+                BuildAllCards();
+            }
+
             if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
-                analytics.LogEvent("shop_opened");
+                analytics.LogEvent(AnalyticsEvents.ShopOpened);
         }
 
-        private void RefreshCurrency()
+        protected override void OnHide()
         {
-            if (!ServiceLocator.TryGet<ISaveService>(out var save)) return;
-            if (_coinsLabel != null) _coinsLabel.text = save.Current.coins.ToString("N0");
-            if (_gemsLabel  != null) _gemsLabel.text  = save.Current.gems.ToString();
+            CurrencyService.OnCoinsChanged -= OnCoinsChangedHandler;
         }
 
-        private void BuildShopCards()
+        private async void InitializeShopAsync()
         {
-            if (_shopCardPrefab == null) return;
-            BuildCards(_coinCardContainer, _coinItems, false);
-            BuildCards(_gemCardContainer,  _gemItems,  true);
+            if (_shopService != null)
+                await _shopService.InitializeAsync();
+            if (_loadingOverlay != null) _loadingOverlay.SetActive(false);
+            BuildAllCards();
         }
 
-        private void BuildCards(Transform container, List<ShopItem> items, bool isGems)
+        private void BuildAllCards()
+        {
+            ClearCards();
+            if (_catalog == null || _cardPrefab == null) return;
+
+            foreach (var product in _catalog.CoinProducts)
+                SpawnCard(product, _coinCardContainer);
+            foreach (var product in _catalog.GemProducts)
+                SpawnCard(product, _gemCardContainer);
+            foreach (var product in _catalog.SpecialProducts)
+                SpawnCard(product, _specialCardContainer);
+        }
+
+        private void SpawnCard(ShopProduct product, Transform container)
         {
             if (container == null) return;
-            foreach (Transform child in container) Destroy(child.gameObject);
-            foreach (var item in items)
-            {
-                var card = Instantiate(_shopCardPrefab, container);
-                var capturedItem = item;
-                card.Setup(item.displayName, item.priceDisplay, () => OnPurchaseClicked(capturedItem));
-            }
+            string localizedPrice = _shopService != null
+                ? _shopService.GetLocalizedPrice(product.ProductId)
+                : product.FallbackPrice;
+
+            var card = Instantiate(_cardPrefab, container);
+            card.Setup(product, localizedPrice, OnCardPurchaseClicked);
+            _spawnedCards.Add(card);
+        }
+
+        private void ClearCards()
+        {
+            _spawnedCards.Clear();
+            ClearContainer(_coinCardContainer);
+            ClearContainer(_gemCardContainer);
+            ClearContainer(_specialCardContainer);
+        }
+
+        private static void ClearContainer(Transform container)
+        {
+            if (container == null) return;
+            foreach (Transform child in container)
+                Destroy(child.gameObject);
         }
 
         private void ShowTab(int tab)
         {
-            _coinPanel?.SetActive(tab == 0);
-            _gemPanel?.SetActive(tab == 1);
+            _coinsPanel?.SetActive(tab == 0);
+            _gemsPanel?.SetActive(tab == 1);
             _specialPanel?.SetActive(tab == 2);
+
+            _coinsTabActive?.SetActive(tab == 0);
+            _gemsTabActive?.SetActive(tab == 1);
+            _specialTabActive?.SetActive(tab == 2);
         }
 
-        private async void OnPurchaseClicked(ShopItem item)
+        private async void OnCardPurchaseClicked(string productId)
         {
-            if (ServiceLocator.TryGet<IPurchaseService>(out var purchase))
-                await purchase.PurchaseAsync(item.productId);
+            if (_shopService == null)
+            {
+                GameLogger.Warning("ShopScreen", "ShopService not available.");
+                return;
+            }
+
             if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
-                analytics.LogEvent(AnalyticsEvents.IapStarted, ("product_id", item.productId));
-            GameLogger.Info("ShopScreen", $"Purchase initiated: {item.productId}");
+                analytics.LogEvent(AnalyticsEvents.PurchaseStarted, ("product_id", (object)productId));
+
+            var result = await _shopService.PurchaseAsync(productId);
+
+            if (result.IsSuccess)
+            {
+                RefreshCurrencyHeader();
+                _successModal?.Show(result);
+
+                if (ServiceLocator.TryGet<IAnalyticsService>(out var analyticsOk))
+                    analyticsOk.LogEvent(AnalyticsEvents.PurchaseCompleted, ("product_id", (object)productId));
+            }
+            else
+            {
+                _failureModal?.Show(result);
+
+                if (ServiceLocator.TryGet<IAnalyticsService>(out var analyticsFail))
+                {
+                    string evt = result.IsCancelled ? AnalyticsEvents.PurchaseCancelled : AnalyticsEvents.PurchaseFailed;
+                    analyticsFail.LogEvent(evt, ("product_id", (object)productId));
+                }
+            }
         }
 
-        private async void OnRemoveAdsClicked()
+        private async void OnRestoreClicked()
         {
-            if (ServiceLocator.TryGet<IPurchaseService>(out var purchase))
-                await purchase.PurchaseAsync("remove_ads");
-            GameLogger.Info("ShopScreen", "Remove Ads purchase initiated.");
+            if (_shopService == null) return;
+            bool restored = await _shopService.RestoreAsync();
+            if (restored)
+            {
+                if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
+                    analytics.LogEvent(AnalyticsEvents.PurchaseRestored);
+                BuildAllCards();
+            }
         }
 
-        private void OnBackClicked() => ScreenManager.Instance.Back();
+        private void RefreshCurrencyHeader()
+        {
+            if (!ServiceLocator.TryGet<ISaveService>(out var save)) return;
+            if (_coinsHeaderLabel != null)
+                _coinsHeaderLabel.text = CurrencyFormatter.Format(save.Current.coins);
+            if (_gemsHeaderLabel != null)
+                _gemsHeaderLabel.text = save.Current.gems.ToString();
+        }
+
+        private void OnCoinsChangedHandler(long newBalance, CurrencyTransaction tx) => RefreshCurrencyHeader();
+
+        private void OnCoinsTabClicked()   => ShowTab(0);
+        private void OnGemsTabClicked()    => ShowTab(1);
+        private void OnSpecialTabClicked() => ShowTab(2);
+        private void OnBackClicked()       => ScreenManager.Instance.Back();
 
         private void OnDestroy()
         {
             _backButton?.onClick.RemoveListener(OnBackClicked);
-            _removeAdsButton?.onClick.RemoveListener(OnRemoveAdsClicked);
+            _coinsTabButton?.onClick.RemoveListener(OnCoinsTabClicked);
+            _gemsTabButton?.onClick.RemoveListener(OnGemsTabClicked);
+            _specialTabButton?.onClick.RemoveListener(OnSpecialTabClicked);
+            _restorePurchasesButton?.onClick.RemoveListener(OnRestoreClicked);
         }
     }
 }
