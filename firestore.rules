@@ -1,31 +1,68 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /players/{playerId} {
-      allow read, write: if request.auth != null && request.auth.uid == playerId;
+    // ── Helper functions ──────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-      match /purchases/{purchaseId} {
-        allow read:  if request.auth != null && request.auth.uid == playerId;
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ── Player profiles ───────────────────────────────────────────────────────
+    match /players/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // Economy: server-write-only (Cloud Run with Admin SDK bypasses rules)
+      match /economy/{doc} {
+        allow read: if isOwner(uid);
         allow write: if false;
       }
 
-      match /economy/{document=**} {
-        allow read:  if request.auth != null && request.auth.uid == playerId;
-        allow write: if false;
-      }
-
+      // Economy transaction log: server-write-only
       match /transactions/{txId} {
-        allow read:  if request.auth != null && request.auth.uid == playerId;
+        allow read: if isOwner(uid);
         allow write: if false;
       }
 
-      match /entitlements/{entitlementId} {
-        allow read:  if request.auth != null && request.auth.uid == playerId;
+      // Daily reward state: server-write-only
+      match /dailyRewards/{doc} {
+        allow read: if isOwner(uid);
         allow write: if false;
+      }
+
+      // IAP purchase records: server-write-only
+      match /purchases/{purchaseId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // Entitlement grants: server-write-only
+      match /entitlements/{entitlementId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // Progression: client readable+writable (conflict resolution in Cloud Run)
+      match /progression/{doc} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Mission progress: client readable+writable
+      match /missions/{missionId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Achievement progress: client readable+writable
+      match /achievements/{achievementId} {
+        allow read, write: if isOwner(uid);
       }
     }
 
+    // ── Catch-all: deny everything else ──────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

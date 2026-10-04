@@ -1,10 +1,14 @@
 using UnityEngine;
 using KingSmash.Services;
-using KingSmash.Core;
+using KingSmash.Services.Mocks;
+using KingSmash.Cloud;
 using KingSmash.Economy;
 using KingSmash.Progression;
 using KingSmash.PowerUps;
 using KingSmash.Shop;
+using KingSmash.Ads;
+using KingSmash.Retention;
+using KingSmash.Services.Firebase;
 
 namespace KingSmash.Core
 {
@@ -28,10 +32,14 @@ namespace KingSmash.Core
             GameLogger.Initialize(_gameConfig.logLevel);
             GameLogger.Info("GameBootstrap", "Initializing game systems...");
 
+            FirebaseEnvironmentConfig.LogEnvironment();
+
             ServiceLocator.Initialize();
             RegisterServices();
             ServiceLocator.Get<ISaveService>().Load();
             ServiceLocator.Get<IConfigService>().Initialize();
+
+            ServiceLocator.Get<DailyRewardService>().CheckAndResetIfNewDay();
 
             GameLogger.Info("GameBootstrap", "All systems ready.");
             ServiceLocator.Get<IAnalyticsService>().LogEvent(AnalyticsEvents.AppOpen);
@@ -46,8 +54,19 @@ namespace KingSmash.Core
             ServiceLocator.Register<IAuthService>(new AuthServiceMock());
             ServiceLocator.Register<IPlayerDataService>(new PlayerDataServiceMock());
             ServiceLocator.Register<IPurchaseService>(new PurchaseServiceMock());
-            ServiceLocator.Register<IAdsService>(new AdsServiceMock());
             ServiceLocator.Register<IAudioService>(new AudioManager());
+
+            // ── Cloud save (mock for dev; swap CloudSaveServiceMock for FirebaseCloudSaveService in prod) ──
+            var cloudSaveMock = new CloudSaveServiceMock();
+            ServiceLocator.Register<ICloudSaveService>(cloudSaveMock);
+
+            // ── Cloud sync service ────────────────────────────────────────────
+            var cloudSyncService = new CloudSyncService(
+                ServiceLocator.Get<ICloudSaveService>(),
+                ServiceLocator.Get<ISaveService>(),
+                ServiceLocator.Get<IAuthService>(),
+                ServiceLocator.Get<IConfigService>());
+            ServiceLocator.Register<CloudSyncService>(cloudSyncService);
 
             var upgradeConfig = Resources.Load<KingUpgradeConfig>("KingUpgradeConfig");
             if (upgradeConfig == null)
@@ -97,6 +116,69 @@ namespace KingSmash.Core
                 ServiceLocator.Get<ISaveService>(),
                 ServiceLocator.Get<IAuthService>(),
                 shopCatalog));
+
+            var adConfig = Resources.Load<AdConfiguration>("AdConfiguration");
+            if (adConfig == null)
+                GameLogger.Warning("GameBootstrap", "AdConfiguration not found in Resources.");
+            else
+                ServiceLocator.Register<AdConfiguration>(adConfig);
+
+            var adsMock = new AdsServiceMock();
+            ServiceLocator.Register<IAdsService>(adsMock);
+            ServiceLocator.Register<IRewardedAdService>(adsMock);
+
+            var interstitialService = new AdMobInterstitialService(
+                adsMock,
+                adConfig,
+                ServiceLocator.Get<IAdEntitlementService>(),
+                ServiceLocator.Get<ISaveService>(),
+                ServiceLocator.Get<IConfigService>());
+            ServiceLocator.Register<IInterstitialAdService>(interstitialService);
+
+            var rewardedAdFlowService = new RewardedAdFlowService(
+                adsMock,
+                ServiceLocator.Get<RewardService>(),
+                ServiceLocator.Get<ISaveService>(),
+                ServiceLocator.Get<IAdEntitlementService>(),
+                ServiceLocator.Get<IConfigService>(),
+                powerUpService,
+                adConfig);
+            ServiceLocator.Register<RewardedAdFlowService>(rewardedAdFlowService);
+
+            var dailyRewardConfig = Resources.Load<DailyRewardConfig>("DailyRewardConfig");
+            if (dailyRewardConfig == null)
+                GameLogger.Warning("GameBootstrap", "DailyRewardConfig not found in Resources.");
+            else
+                ServiceLocator.Register<DailyRewardConfig>(dailyRewardConfig);
+
+            var missionConfig = Resources.Load<MissionConfig>("MissionConfig");
+            if (missionConfig == null)
+                GameLogger.Warning("GameBootstrap", "MissionConfig not found in Resources.");
+            else
+                ServiceLocator.Register<MissionConfig>(missionConfig);
+
+            var achievementConfig = Resources.Load<AchievementConfig>("AchievementConfig");
+            if (achievementConfig == null)
+                GameLogger.Warning("GameBootstrap", "AchievementConfig not found in Resources.");
+            else
+                ServiceLocator.Register<AchievementConfig>(achievementConfig);
+
+            var dailyRewardService = new DailyRewardService(
+                ServiceLocator.Get<ISaveService>(),
+                ServiceLocator.Get<RewardService>(),
+                dailyRewardConfig,
+                ServiceLocator.Get<PowerUpService>());
+            ServiceLocator.Register<DailyRewardService>(dailyRewardService);
+
+            var missionService = new MissionService(
+                ServiceLocator.Get<ISaveService>(),
+                missionConfig,
+                achievementConfig,
+                ServiceLocator.Get<RewardService>(),
+                ServiceLocator.Get<PowerUpService>(),
+                ServiceLocator.Get<CurrencyService>());
+            missionService.Initialize();
+            ServiceLocator.Register<MissionService>(missionService);
         }
     }
 }

@@ -42,6 +42,33 @@ namespace KingSmash.Save
                 GameLogger.Info("SaveMigrator", "v3->v4: economyVersion initialised");
             }
 
+            if (data.version < 5)
+            {
+                if (data.adSessionStats == null)
+                    data.adSessionStats = new KingSmash.Ads.AdSessionStats();
+
+                GameLogger.Info("SaveMigrator", "v4->v5: adSessionStats initialised");
+            }
+
+            if (data.version < 6)
+            {
+                if (data.missionProgress == null)
+                    data.missionProgress = new System.Collections.Generic.List<MissionProgress>();
+                if (data.achievementProgress == null)
+                    data.achievementProgress = new System.Collections.Generic.List<AchievementProgress>();
+
+                GameLogger.Info("SaveMigrator", "v5->v6: missionProgress and achievementProgress initialised");
+            }
+
+            if (data.version < 7)
+            {
+                data.cloudRevision     = 0;
+                data.lastSyncTimestamp = 0;
+                if (data.cloudPlayerId == null) data.cloudPlayerId = "";
+
+                GameLogger.Info("SaveMigrator", "v6->v7: cloud save fields initialised");
+            }
+
             data.version = SaveData.CurrentVersion;
             return data;
         }

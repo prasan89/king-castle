@@ -2,22 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using KingSmash.Core;
-using KingSmash.Services;
+using KingSmash.Retention;
+using KingSmash.UI.Widgets;
+
 namespace KingSmash.UI.Screens
 {
-    [Serializable]
-    public class MissionDef
-    {
-        public string id;
-        public string displayName;
-        public string description;
-        public int targetCount;
-        public long coinReward;
-        public bool isAchievement;
-    }
-
     public class MissionsScreen : UIScreen
     {
         [Header("Navigation")]
@@ -29,60 +19,101 @@ namespace KingSmash.UI.Screens
         [SerializeField] private GameObject _dailyPanel;
         [SerializeField] private GameObject _achievementsPanel;
 
-        [Header("Mission Card Spawn")]
+        [Header("Cards")]
         [SerializeField] private Transform _dailyCardContainer;
         [SerializeField] private Transform _achievementCardContainer;
         [SerializeField] private MissionCardWidget _missionCardPrefab;
-
-        // Inline sample missions — real implementation would load from MissionConfig ScriptableObjects
-        private static readonly MissionDef[] SampleDailyMissions =
-        {
-            new MissionDef { id = "play_5",       displayName = "Play 5 levels",          targetCount = 5,  coinReward = 200 },
-            new MissionDef { id = "rescue_queen", displayName = "Rescue Queen 3 times",   targetCount = 3,  coinReward = 300 },
-            new MissionDef { id = "destroy_10",   displayName = "Destroy 10 castles",     targetCount = 10, coinReward = 200 },
-            new MissionDef { id = "defeat_50",    displayName = "Defeat 50 enemies",      targetCount = 50, coinReward = 300 },
-        };
-
-        private static readonly MissionDef[] SampleAchievements =
-        {
-            new MissionDef { id = "ach_100_levels",   displayName = "Complete 100 levels",  targetCount = 100,  coinReward = 1000, isAchievement = true },
-            new MissionDef { id = "ach_1000_enemies", displayName = "Defeat 1,000 enemies", targetCount = 1000, coinReward = 500,  isAchievement = true },
-            new MissionDef { id = "ach_3star_10",     displayName = "3-star 10 levels",     targetCount = 10,   coinReward = 500,  isAchievement = true },
-        };
+        [SerializeField] private AchievementCardWidget _achievementCardPrefab;
 
         protected override void Awake()
         {
             base.Awake();
             _backButton?.onClick.AddListener(OnBackClicked);
-            _dailyTab?.onClick.AddListener(() => ShowTab(false));
-            _achievementsTab?.onClick.AddListener(() => ShowTab(true));
+            _dailyTab?.onClick.AddListener(OnDailyTabClicked);
+            _achievementsTab?.onClick.AddListener(OnAchievementsTabClicked);
         }
 
         protected override void OnShow()
         {
-            BuildMissionCards();
+            RefreshDailyMissions();
+            RefreshAchievements();
             ShowTab(false);
+            MissionService.OnMissionProgressed += HandleMissionProgressed;
         }
 
-        private void BuildMissionCards()
+        protected override void OnHide()
         {
-            if (_missionCardPrefab == null) return;
-            BuildCards(_dailyCardContainer, SampleDailyMissions);
-            BuildCards(_achievementCardContainer, SampleAchievements);
+            MissionService.OnMissionProgressed -= HandleMissionProgressed;
         }
 
-        private void BuildCards(Transform container, MissionDef[] missions)
+        private void OnDisable()
         {
-            if (container == null) return;
-            foreach (Transform child in container) Destroy(child.gameObject);
-            foreach (var mission in missions)
+            MissionService.OnMissionProgressed -= HandleMissionProgressed;
+        }
+
+        private void HandleMissionProgressed(string missionId)
+        {
+            RefreshDailyMissions();
+        }
+
+        private void RefreshDailyMissions()
+        {
+            if (_dailyCardContainer == null || _missionCardPrefab == null) return;
+            if (!ServiceLocator.TryGet<MissionConfig>(out var config)) return;
+            if (!ServiceLocator.TryGet<MissionService>(out var missionService)) return;
+
+            foreach (Transform child in _dailyCardContainer)
+                Destroy(child.gameObject);
+
+            foreach (var def in config.dailyMissions)
             {
-                var card = Instantiate(_missionCardPrefab, container);
-                // Use placeholder progress from save — real implementation tracks per-mission progress
-                int progress = 0;
-                ServiceLocator.TryGet<ISaveService>(out var save);
-                card.Setup(mission.displayName, progress, mission.targetCount, mission.coinReward, false);
+                var card = Instantiate(_missionCardPrefab, _dailyCardContainer);
+                var progress = missionService.GetMissionProgress(def.missionId);
+                card.Setup(def, progress);
+                card.OnClaimPressed += ClaimMission;
             }
+        }
+
+        private void RefreshAchievements()
+        {
+            if (_achievementCardContainer == null || _achievementCardPrefab == null) return;
+            if (!ServiceLocator.TryGet<AchievementConfig>(out var achConfig)) return;
+            if (!ServiceLocator.TryGet<MissionService>(out var missionService)) return;
+
+            foreach (Transform child in _achievementCardContainer)
+                Destroy(child.gameObject);
+
+            foreach (var def in achConfig.achievements)
+            {
+                var card = Instantiate(_achievementCardPrefab, _achievementCardContainer);
+                var progress = missionService.GetAchievementProgress(def.achievementId);
+                card.Setup(def, progress);
+                card.OnClaimPressed += ClaimAchievementTier;
+            }
+        }
+
+        private void ClaimMission(string missionId)
+        {
+            if (!ServiceLocator.TryGet<MissionService>(out var missionService)) return;
+            var result = missionService.ClaimMission(missionId);
+            if (result.Success)
+            {
+                var r = result.Reward;
+                RewardRevealUI.Show(r.coins, r.gems, r.powerUpType ?? KingSmash.PowerUps.PowerUpType.None, r.powerUpCount);
+            }
+            RefreshDailyMissions();
+        }
+
+        private void ClaimAchievementTier(string achievementId)
+        {
+            if (!ServiceLocator.TryGet<MissionService>(out var missionService)) return;
+            var result = missionService.ClaimAchievementTier(achievementId);
+            if (result.Success)
+            {
+                var r = result.Reward;
+                RewardRevealUI.Show(r.coins, r.gems, r.powerUpType ?? KingSmash.PowerUps.PowerUpType.None, r.powerUpCount);
+            }
+            RefreshAchievements();
         }
 
         private void ShowTab(bool achievements)
@@ -91,7 +122,15 @@ namespace KingSmash.UI.Screens
             _achievementsPanel?.SetActive(achievements);
         }
 
+        private void OnDailyTabClicked() => ShowTab(false);
+        private void OnAchievementsTabClicked() => ShowTab(true);
         private void OnBackClicked() => ScreenManager.Instance.Back();
-        private void OnDestroy()     => _backButton?.onClick.RemoveListener(OnBackClicked);
+
+        private void OnDestroy()
+        {
+            _backButton?.onClick.RemoveListener(OnBackClicked);
+            _dailyTab?.onClick.RemoveListener(OnDailyTabClicked);
+            _achievementsTab?.onClick.RemoveListener(OnAchievementsTabClicked);
+        }
     }
 }

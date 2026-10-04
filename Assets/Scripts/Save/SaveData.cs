@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using KingSmash.Ads;
 using KingSmash.PowerUps;
 
 namespace KingSmash.Save
@@ -12,9 +13,26 @@ namespace KingSmash.Save
     }
 
     [Serializable]
+    public class MissionProgress
+    {
+        public string missionId;
+        public int    progress;
+        public bool   claimed;
+        public long   lastResetTimestamp;
+    }
+
+    [Serializable]
+    public class AchievementProgress
+    {
+        public string achievementId;
+        public int    progress;
+        public int    claimedTierCount;
+    }
+
+    [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 7;
         public int version = CurrentVersion;
         public string playerId = "";
         public int currentLevel = 0;
@@ -38,6 +56,16 @@ namespace KingSmash.Save
         public KingSmash.Progression.KingProgression kingProgression = new();
         public List<int> processedLevelRewards = new();
         public int economyVersion = 1;
+        public AdSessionStats adSessionStats = new();
+        public List<MissionProgress> missionProgress = new();
+        public List<AchievementProgress> achievementProgress = new();
+        public long lastKnownServerTime = 0;
+
+        // ── v7: Cloud save fields ──────────────────────────────────────────────
+        public int    cloudRevision     = 0;
+        public long   lastSyncTimestamp = 0;
+        public string cloudPlayerId     = "";
+
         public KingSmash.Progression.KingProgression KingProgression { get => kingProgression; set => kingProgression = value; }
         public bool IsRewardProcessed(int levelIndex) => processedLevelRewards.Contains(levelIndex);
         public void MarkRewardProcessed(int levelIndex) { if (!processedLevelRewards.Contains(levelIndex)) processedLevelRewards.Add(levelIndex); }
@@ -49,6 +77,24 @@ namespace KingSmash.Save
         public bool IsWorldCompleted(int worldIndex) => completedWorlds.Contains(worldIndex);
         public void RecordWorldCompleted(int worldIndex) { if (!completedWorlds.Contains(worldIndex)) completedWorlds.Add(worldIndex); }
         public static SaveData CreateNew() { return new SaveData { playerId = Guid.NewGuid().ToString(), lastSavedTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() }; }
+
+        public MissionProgress GetOrCreateMissionProgress(string missionId)
+        {
+            foreach (var mp in missionProgress)
+                if (mp.missionId == missionId) return mp;
+            var entry = new MissionProgress { missionId = missionId };
+            missionProgress.Add(entry);
+            return entry;
+        }
+
+        public AchievementProgress GetOrCreateAchievementProgress(string achievementId)
+        {
+            foreach (var ap in achievementProgress)
+                if (ap.achievementId == achievementId) return ap;
+            var entry = new AchievementProgress { achievementId = achievementId };
+            achievementProgress.Add(entry);
+            return entry;
+        }
     }
 
     [Serializable]

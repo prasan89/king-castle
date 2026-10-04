@@ -10,6 +10,7 @@ namespace KingSmash.Economy
         WorldCompletion,
         DailyReward,
         Mission,
-        Debug
+        Debug,
+        Achievement
     }
 }

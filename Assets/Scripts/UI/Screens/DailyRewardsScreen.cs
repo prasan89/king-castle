@@ -1,45 +1,33 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using KingSmash.Core;
 using KingSmash.Services;
-using KingSmash.Save;
+using KingSmash.Retention;
+using KingSmash.UI.Widgets;
+
 namespace KingSmash.UI.Screens
 {
-    [Serializable]
-    public class DailyRewardDef
-    {
-        public int day;
-        public long coinsReward;
-        public int gemsReward;
-        public string displayText;
-    }
-
     public class DailyRewardsScreen : UIScreen
     {
         [Header("Navigation")]
         [SerializeField] private Button _backButton;
 
         [Header("Day Widgets")]
-        [SerializeField] private List<DayRewardWidget> _dayWidgets;   // 7 widgets
+        [SerializeField] private List<DayRewardWidget> _dayWidgets;
 
         [Header("Claim")]
         [SerializeField] private Button _claimButton;
         [SerializeField] private TextMeshProUGUI _claimButtonLabel;
         [SerializeField] private TextMeshProUGUI _statusLabel;
+        [SerializeField] private TextMeshProUGUI _timerLabel;
+        [SerializeField] private GameObject _claimButtonRoot;
+        [SerializeField] private CanvasGroup _screenCanvasGroup;
 
-        private static readonly DailyRewardDef[] Rewards =
-        {
-            new DailyRewardDef { day = 1, coinsReward = 100,  displayText = "100" },
-            new DailyRewardDef { day = 2, coinsReward = 200,  displayText = "200" },
-            new DailyRewardDef { day = 3, gemsReward  = 10,   displayText = "10 Gems" },
-            new DailyRewardDef { day = 4, coinsReward = 300,  displayText = "300" },
-            new DailyRewardDef { day = 5, gemsReward  = 1,    displayText = "1 Gem" },
-            new DailyRewardDef { day = 6, coinsReward = 500,  displayText = "500" },
-            new DailyRewardDef { day = 7, coinsReward = 1000, gemsReward = 5, displayText = "Special!" },
-        };
+        private bool _claiming = false;
 
         protected override void Awake()
         {
@@ -50,52 +38,63 @@ namespace KingSmash.UI.Screens
 
         protected override void OnShow()
         {
+            if (ServiceLocator.TryGet<DailyRewardService>(out var dailyService))
+                dailyService.CheckAndResetIfNewDay();
             RefreshUI();
-            if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
-                analytics.LogEvent(AnalyticsEvents.DailyRewardClaimed); // view event
         }
 
         private void RefreshUI()
         {
-            if (!ServiceLocator.TryGet<ISaveService>(out var save)) return;
-            var state = save.Current.dailyRewardState;
-            int currentDay = Mathf.Clamp(state.currentStreakDay, 1, 7);
-            bool canClaim  = !state.claimedToday;
+            if (!ServiceLocator.TryGet<DailyRewardService>(out var dailyService)) return;
+            if (!ServiceLocator.TryGet<DailyRewardConfig>(out var config)) return;
 
-            for (int i = 0; i < _dayWidgets.Count && i < Rewards.Length; i++)
+            bool canClaim = dailyService.CanClaimToday();
+            int currentDay = dailyService.CurrentDay;
+
+            for (int i = 0; i < _dayWidgets.Count && i < config.CycleLength; i++)
             {
-                var def = Rewards[i];
-                bool isCurrent  = (i + 1) == currentDay;
-                bool isClaimed  = (i + 1) < currentDay || (isCurrent && !canClaim);
-                _dayWidgets[i]?.Setup(def.day, def.displayText, isCurrent, isClaimed, i == 6);
+                var entry = config.GetEntry(i + 1);
+                DayState state;
+                if (i + 1 < currentDay)
+                    state = DayState.Claimed;
+                else if (i + 1 == currentDay && canClaim)
+                    state = DayState.CurrentAvailable;
+                else if (i + 1 == currentDay && !canClaim)
+                    state = DayState.CurrentClaimed;
+                else
+                    state = DayState.Upcoming;
+                _dayWidgets[i]?.Setup(entry, state);
             }
 
-            if (_claimButton != null) _claimButton.interactable = canClaim;
-            if (_claimButtonLabel != null) _claimButtonLabel.text = canClaim ? "Claim" : "Come Back Tomorrow";
-            if (_statusLabel != null) _statusLabel.text = canClaim ? $"Day {currentDay} Reward!" : "Claimed today!";
+            if (_claimButton != null) _claimButton.interactable = canClaim && !_claiming;
+            if (_claimButtonLabel != null) _claimButtonLabel.text = canClaim ? "CLAIM REWARD!" : "Come Back Tomorrow";
+            if (_statusLabel != null) _statusLabel.text = canClaim ? $"Day {currentDay} Available!" : "Reward claimed today";
         }
 
         private void OnClaimClicked()
         {
-            if (!ServiceLocator.TryGet<ISaveService>(out var save)) return;
-            var state = save.Current.dailyRewardState;
-            if (state.claimedToday) return;
+            if (_claiming) return;
+            if (!ServiceLocator.TryGet<DailyRewardService>(out var dailyService)) return;
+            _claiming = true;
 
-            int day = Mathf.Clamp(state.currentStreakDay, 1, 7);
-            var reward = Rewards[day - 1];
-
-            save.Current.coins += reward.coinsReward;
-            save.Current.gems  += reward.gemsReward;
-            state.claimedToday = true;
-            state.lastClaimedTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            state.currentStreakDay = day < 7 ? day + 1 : 1;
-            save.Save();
-
-            if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
-                analytics.LogEvent(AnalyticsEvents.DailyRewardClaimed, ("day", day));
+            var result = dailyService.ClaimTodayReward();
+            if (result.Success)
+            {
+                StartCoroutine(ShowRewardAnimation(result));
+            }
+            else
+            {
+                _claiming = false;
+            }
 
             RefreshUI();
-            StartCoroutine(UIAnimationController.BounceReveal(_claimButton.transform, 0.3f));
+        }
+
+        private IEnumerator ShowRewardAnimation(DailyRewardResult result)
+        {
+            RewardRevealUI.Show(result.CoinsGranted, result.GemsGranted, result.PowerUpGranted, result.PowerUpCount);
+            yield return null;
+            _claiming = false;
         }
 
         private void OnBackClicked() => ScreenManager.Instance.Back();

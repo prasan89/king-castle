@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using KingSmash.Core;
 using KingSmash.Services;
+using KingSmash.Retention;
 namespace KingSmash.UI.Screens
 {
     public class HomeScreen : UIScreen
@@ -22,6 +23,11 @@ namespace KingSmash.UI.Screens
         [SerializeField] private Button _dailyButton;
         [SerializeField] private Button _missionsButton;
 
+        [Header("Notification Badges")]
+        [SerializeField] private GameObject _dailyBadge;
+        [SerializeField] private GameObject _missionsBadge;
+        [SerializeField] private GameObject _achievementsBadge;
+
         protected override void Awake()
         {
             base.Awake();
@@ -36,9 +42,39 @@ namespace KingSmash.UI.Screens
         protected override void OnShow()
         {
             RefreshPlayerData();
+            RefreshBadges();
+            DailyRewardService.OnDailyClaimed += HandleDailyClaimed;
+            MissionService.OnMissionClaimed += HandleMissionClaimed;
             ServiceLocator.TryGet<IAnalyticsService>(out var analytics);
             analytics?.LogEvent(AnalyticsEvents.MainMenuOpened);
             GameManager.Instance?.TransitionTo(GameState.MainMenu);
+        }
+
+        private void OnDisable()
+        {
+            DailyRewardService.OnDailyClaimed -= HandleDailyClaimed;
+            MissionService.OnMissionClaimed -= HandleMissionClaimed;
+        }
+
+        private void HandleDailyClaimed(DailyRewardResult result) => RefreshBadges();
+        private void HandleMissionClaimed(string missionId, MissionClaimResult result) => RefreshBadges();
+
+        private void RefreshBadges()
+        {
+            if (!ServiceLocator.TryGet<ISaveService>(out var save)
+                || !ServiceLocator.TryGet<MissionConfig>(out var missionConfig)
+                || !ServiceLocator.TryGet<AchievementConfig>(out var achConfig)
+                || !ServiceLocator.TryGet<DailyRewardService>(out var dailyService))
+            {
+                _dailyBadge?.SetActive(false);
+                _missionsBadge?.SetActive(false);
+                _achievementsBadge?.SetActive(false);
+                return;
+            }
+
+            _dailyBadge?.SetActive(dailyService.CanClaimToday());
+            _missionsBadge?.SetActive(NotificationBadgeService.HasClaimableMission(save, missionConfig));
+            _achievementsBadge?.SetActive(NotificationBadgeService.HasClaimableAchievement(save, achConfig));
         }
 
         private void RefreshPlayerData()

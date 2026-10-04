@@ -1,19 +1,23 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using KingSmash.Ads;
 using KingSmash.Core;
+using KingSmash.Economy;
 using KingSmash.Levels;
-using KingSmash.Services;
 using KingSmash.Progression;
+using KingSmash.Services;
+using KingSmash.UI;
 
 namespace KingSmash.UI.Screens
 {
     public class LevelCompleteScreen : UIScreen
     {
         [Header("Stars")]
-        [SerializeField] private List<GameObject> _starObjects;  // 3 star GameObjects
+        [SerializeField] private List<GameObject> _starObjects;
 
         [Header("Stats")]
         [SerializeField] private TextMeshProUGUI _destructionLabel;
@@ -31,13 +35,18 @@ namespace KingSmash.UI.Screens
         [SerializeField] private Button _nextLevelButton;
         [SerializeField] private Button _replayButton;
 
+        [Header("Ad Reward")]
+        [SerializeField] private DoubleRewardPanel _doubleRewardPanel;
+
         private LevelResult _result;
         private int         _currentLevelIndex;
 
-        // Level-up state captured from KingProgressionService.OnKingLevelUp
         private bool _leveledUpThisSession;
         private int  _levelUpFromLevel;
         private int  _levelUpToLevel;
+
+        private bool _doubleRewardDecided;
+        private bool _doubleRewardAccepted;
 
         // -------------------------------------------------------------------------
         // Lifecycle
@@ -71,12 +80,10 @@ namespace KingSmash.UI.Screens
         {
             if (!GameManager.Instance || GameManager.Instance.CurrentState != GameState.LevelComplete) return;
 
-            // Reset level-up state for this new result session
             _leveledUpThisSession = false;
             _levelUpFromLevel     = 0;
             _levelUpToLevel       = 0;
 
-            // Prefer the full result committed by LevelProgressionService
             LevelResult lastResult = LevelProgressionService.LastResult;
             bool resultIsFresh = lastResult != null
                                  && lastResult.Stars == stars
@@ -88,7 +95,6 @@ namespace KingSmash.UI.Screens
             }
             else
             {
-                // Fallback: construct a minimal result from the signal parameters
                 _result = new LevelResult
                 {
                     Stars            = stars,
@@ -117,7 +123,6 @@ namespace KingSmash.UI.Screens
         {
             if (_result == null) return;
 
-            // Hide level-up panel until we know whether a level-up happened
             if (_levelUpPanel != null) _levelUpPanel.SetActive(false);
 
             StartCoroutine(PlayRevealSequence());
@@ -125,12 +130,10 @@ namespace KingSmash.UI.Screens
 
         private IEnumerator PlayRevealSequence()
         {
-            // Hide all stars first
             foreach (var s in _starObjects) if (s != null) s.SetActive(false);
 
             yield return new WaitForSecondsRealtime(0.3f);
 
-            // Reveal stars one by one
             for (int i = 0; i < _starObjects.Count; i++)
             {
                 if (i < _result.Stars && _starObjects[i] != null)
@@ -141,7 +144,6 @@ namespace KingSmash.UI.Screens
                 }
             }
 
-            // Populate stat labels
             if (_destructionLabel != null)
                 _destructionLabel.text = $"{_result.DestructionRatio * 100f:F0}%";
             if (_enemiesLabel != null)
@@ -149,11 +151,9 @@ namespace KingSmash.UI.Screens
             if (_queenLabel != null)
                 _queenLabel.text = _result.QueenRescued ? "✓" : "✗";
 
-            // Animate coin count-up
             if (_coinsEarnedLabel != null)
                 yield return StartCoroutine(UIAnimationController.CountUp(_coinsEarnedLabel, 0, _result.CoinsEarned, 1.2f));
 
-            // Animate XP count-up
             long xpEarned = _result.XPEarned;
             if (_xpEarnedLabel != null)
             {
@@ -162,7 +162,8 @@ namespace KingSmash.UI.Screens
                     prefix: "+", suffix: " XP"));
             }
 
-            // Show level-up panel if a level-up was triggered during this result
+            yield return StartCoroutine(ShowDoubleRewardIfAvailableCoroutine());
+
             if (_leveledUpThisSession && _levelUpPanel != null)
             {
                 if (_levelUpLabel != null)
@@ -171,6 +172,73 @@ namespace KingSmash.UI.Screens
                 _levelUpPanel.SetActive(true);
                 yield return StartCoroutine(UIAnimationController.BounceReveal(_levelUpPanel.transform, 0.4f));
             }
+        }
+
+        private IEnumerator ShowDoubleRewardIfAvailableCoroutine()
+        {
+            if (_doubleRewardPanel == null) yield break;
+
+            if (!ServiceLocator.TryGet<RewardedAdFlowService>(out var flowService)) yield break;
+
+            AdAvailability availability = AdAvailability.Unavailable;
+            if (ServiceLocator.TryGet<IRewardedAdService>(out var adService))
+                availability = adService.CheckAvailability(AdPlacement.LevelCompleteDoubleReward);
+
+            _doubleRewardDecided  = false;
+            _doubleRewardAccepted = false;
+
+            _doubleRewardPanel.Show(_result.CoinsEarned, availability);
+
+            DoubleRewardPanel.OnDoubleRewardAccepted += HandleDoubleAccepted;
+            DoubleRewardPanel.OnDoubleRewardDeclined += HandleDoubleDeclined;
+
+            float elapsed = 0f;
+            const float timeoutSeconds = 30f;
+            yield return new WaitUntil(() =>
+            {
+                elapsed += Time.unscaledDeltaTime;
+                return _doubleRewardDecided || elapsed >= timeoutSeconds;
+            });
+
+            DoubleRewardPanel.OnDoubleRewardAccepted -= HandleDoubleAccepted;
+            DoubleRewardPanel.OnDoubleRewardDeclined -= HandleDoubleDeclined;
+
+            if (_doubleRewardAccepted)
+            {
+                bool taskDone = false;
+                AdRewardResult adResult = null;
+
+                flowService.RequestDoubleRewardAsync(_result).ContinueWith(t =>
+                {
+                    adResult = t.Result;
+                    taskDone = true;
+                }, System.Threading.Tasks.TaskScheduler.FromCurrentSynchronizationContext());
+
+                yield return new WaitUntil(() => taskDone);
+
+                if (adResult != null && adResult.WasRewarded)
+                {
+                    long newTotal = _result.CoinsEarned + adResult.CoinsGranted;
+                    if (_coinsEarnedLabel != null)
+                        yield return StartCoroutine(UIAnimationController.CountUp(
+                            _coinsEarnedLabel, _result.CoinsEarned, newTotal, 0.8f));
+                    _result.CoinsEarned = newTotal;
+                }
+            }
+
+            _doubleRewardPanel.Hide();
+        }
+
+        private void HandleDoubleAccepted()
+        {
+            _doubleRewardAccepted = true;
+            _doubleRewardDecided  = true;
+        }
+
+        private void HandleDoubleDeclined()
+        {
+            _doubleRewardAccepted = false;
+            _doubleRewardDecided  = true;
         }
 
         // -------------------------------------------------------------------------

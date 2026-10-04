@@ -45,5 +45,31 @@ namespace KingSmash
         public const string PurchaseFailed      = "purchase_failed";
         public const string PurchaseCancelled   = "purchase_cancelled";
         public const string PurchaseRestored    = "purchase_restored";
+
+        public const string AdRequested                   = "ad_requested";
+        public const string AdLoaded                      = "ad_loaded";
+        public const string AdStarted                     = "ad_started";
+        public const string AdCompleted                   = "ad_completed";
+        public const string AdFailed                      = "ad_failed";
+        public const string AdSkipped                     = "ad_skipped";
+        public const string RewardedAdRewardGranted       = "rewarded_ad_reward_granted";
+        public const string InterstitialShown             = "interstitial_shown";
+        public const string InterstitialFailed            = "interstitial_failed";
+        public const string InterstitialFrequencyBlocked  = "interstitial_frequency_blocked";
+        public const string AdImpression                  = "ad_impression";
+        public const string AdRevenue                     = "ad_revenue";
+
+        public const string DailyRewardViewed      = "daily_reward_viewed";
+        public const string DailyRewardMissed      = "daily_reward_missed";
+        public const string DailyRewardStreakDay   = "daily_reward_streak_day";
+        public const string MissionViewed          = "mission_viewed";
+        public const string MissionProgressed      = "mission_progressed";
+        public const string MissionCompleted       = "mission_completed";
+        public const string MissionClaimed         = "mission_claimed";
+        public const string AchievementViewed      = "achievement_viewed";
+        public const string AchievementUnlocked    = "achievement_unlocked";
+        public const string AchievementProgressed  = "achievement_progressed";
+        public const string AchievementTierClaimed = "achievement_tier_claimed";
+        public const string RetentionDayOpen       = "retention_day_open";
     }
 }

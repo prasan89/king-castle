@@ -45,3 +45,22 @@ Thumbs.db
 # Addressables cache
 Assets/AddressableAssetsData/AssetGroups/Built In Data.asset
 FastPlatformBuildLayout.txt
+
+# Backend — never commit secrets or env files
+backend/**/.env
+backend/**/.env.local
+backend/**/.env.production
+backend/**/service-account*.json
+backend/**/serviceAccountKey*.json
+backend/**/node_modules/
+backend/**/dist/
+
+# GCP / Firebase secrets
+**/secrets/
+service-account*.json
+*-service-account.json
+gcloud-credentials.json
+
+# Unity Firebase config (platform-specific, provisioned by CI)
+Assets/google-services.json
+Assets/GoogleService-Info.plist

@@ -1,66 +1,147 @@
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using KingSmash.Cloud;
 using KingSmash.Core;
 using KingSmash.Services;
+
 namespace KingSmash.UI.Screens
 {
     public class LoginScreen : UIScreen
     {
         [Header("Buttons")]
-        [SerializeField] private Button _googleButton;
-        [SerializeField] private Button _playGamesButton;
-        [SerializeField] private Button _emailButton;
-        [SerializeField] private Button _guestButton;
+        [SerializeField] private Button _signInGoogleButton;
+        [SerializeField] private Button _continueAnonymouslyButton;
 
         [Header("Status")]
-        [SerializeField] private TextMeshProUGUI _statusLabel;
-        [SerializeField] private GameObject _loadingSpinner;
+        [SerializeField] private TextMeshProUGUI _errorLabel;
+        [SerializeField] private GameObject      _loadingSpinner;
 
         protected override void Awake()
         {
             base.Awake();
-            _googleButton?.onClick.AddListener(OnGoogleClicked);
-            _playGamesButton?.onClick.AddListener(OnPlayGamesClicked);
-            _emailButton?.onClick.AddListener(OnEmailClicked);
-            _guestButton?.onClick.AddListener(OnGuestClicked);
+            _signInGoogleButton?.onClick.AddListener(OnSignInGoogleClicked);
+            _continueAnonymouslyButton?.onClick.AddListener(OnContinueAnonymouslyClicked);
         }
 
         protected override void OnShow()
         {
-            SetStatus("", false);
+            ClearError();
+            SetLoading(false);
         }
 
-        private void OnGoogleClicked()    => AttemptSignIn("google");
-        private void OnPlayGamesClicked() => AttemptSignIn("play_games");
-        private void OnEmailClicked()     => AttemptSignIn("email");
-        private void OnGuestClicked()     => AttemptSignIn("guest");
-
-        private async void AttemptSignIn(string method)
+        private async void OnSignInGoogleClicked()
         {
-            SetStatus("Signing in...", true);
-            if (ServiceLocator.TryGet<IAuthService>(out var auth))
+            SetLoading(true);
+            ClearError();
+
+            try
             {
-                await auth.SignInAnonymouslyAsync();
+                if (!ServiceLocator.TryGet<IAuthService>(out var auth))
+                    throw new Exception("Auth service unavailable.");
+
+                await auth.SignInWithGoogleAsync();
+
+                if (ServiceLocator.TryGet<CloudSyncService>(out var sync))
+                    await sync.FullSyncAsync();
+
+                ServiceLocator.TryGet<IAnalyticsService>(out var analytics);
+                analytics?.LogEvent(AnalyticsEvents.AppOpen);
+
+                ScreenManager.Instance.Show<HomeScreen>();
             }
-            if (ServiceLocator.TryGet<IAnalyticsService>(out var analytics))
-                analytics.LogEvent("login_attempt", ("method", method));
-            SetStatus("", false);
-            ScreenManager.Instance.Show<HomeScreen>();
+            catch (Exception ex)
+            {
+                GameLogger.Error("LoginScreen", $"Google sign-in failed: {ex.Message}");
+                ShowError(TranslateError(ex));
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
-        private void SetStatus(string msg, bool showSpinner)
+        private async void OnContinueAnonymouslyClicked()
         {
-            if (_statusLabel != null) _statusLabel.text = msg;
-            if (_loadingSpinner != null) _loadingSpinner.SetActive(showSpinner);
+            SetLoading(true);
+            ClearError();
+
+            try
+            {
+                if (!ServiceLocator.TryGet<IAuthService>(out var auth))
+                    throw new Exception("Auth service unavailable.");
+
+                await auth.SignInAnonymouslyAsync();
+
+                ServiceLocator.TryGet<IAnalyticsService>(out var analytics);
+                analytics?.LogEvent(AnalyticsEvents.AppOpen);
+
+                ScreenManager.Instance.Show<HomeScreen>();
+            }
+            catch (Exception ex)
+            {
+                GameLogger.Error("LoginScreen", $"Anonymous sign-in failed: {ex.Message}");
+                ShowError(TranslateError(ex));
+            }
+            finally
+            {
+                SetLoading(false);
+            }
+        }
+
+        private void SetLoading(bool loading)
+        {
+            if (_loadingSpinner          != null) _loadingSpinner.SetActive(loading);
+            if (_signInGoogleButton       != null) _signInGoogleButton.interactable       = !loading;
+            if (_continueAnonymouslyButton != null) _continueAnonymouslyButton.interactable = !loading;
+        }
+
+        private void ShowError(string message)
+        {
+            if (_errorLabel != null)
+            {
+                _errorLabel.text = message;
+                _errorLabel.gameObject.SetActive(true);
+            }
+        }
+
+        private void ClearError()
+        {
+            if (_errorLabel != null)
+            {
+                _errorLabel.text = string.Empty;
+                _errorLabel.gameObject.SetActive(false);
+            }
+        }
+
+        private static string TranslateError(Exception ex)
+        {
+            var msg = ex.Message ?? string.Empty;
+
+            if (msg.Contains("network", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("timeout", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("offline", StringComparison.OrdinalIgnoreCase))
+                return "No internet connection. Please check your network and try again.";
+
+            if (msg.Contains("cancelled", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("canceled", StringComparison.OrdinalIgnoreCase))
+                return "Sign-in was cancelled.";
+
+            if (msg.Contains("credential", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("password", StringComparison.OrdinalIgnoreCase))
+                return "Incorrect email or password.";
+
+            if (msg.Contains("too-many-requests", StringComparison.OrdinalIgnoreCase))
+                return "Too many attempts. Please try again later.";
+
+            return "Something went wrong. Please try again.";
         }
 
         private void OnDestroy()
         {
-            _googleButton?.onClick.RemoveListener(OnGoogleClicked);
-            _playGamesButton?.onClick.RemoveListener(OnPlayGamesClicked);
-            _emailButton?.onClick.RemoveListener(OnEmailClicked);
-            _guestButton?.onClick.RemoveListener(OnGuestClicked);
+            _signInGoogleButton?.onClick.RemoveListener(OnSignInGoogleClicked);
+            _continueAnonymouslyButton?.onClick.RemoveListener(OnContinueAnonymouslyClicked);
         }
     }
 }
