@@ -115,7 +115,7 @@ namespace KingSmash.Levels
                 {
                     LevelIndex=9, WorldIndex=0, DisplayName="Mini Fortress",
                     Description="The ultimate challenge. Every skill you have learned is needed.",
-                    KingLaunches=5, DifficultyRating=10, RequiredStarsToUnlock=15, SceneName="Level",
+                    KingLaunches=4, DifficultyRating=7, RequiredStarsToUnlock=15, SceneName="Level", // PATCH-001: KingLaunches 5→4, DifficultyRating confirmed 7 (was 10)
                     RequiredScore=1500, TwoStarScore=2500, ThreeStarScore=3800, MustRescueQueen=true,
                     OneStar_DestructionMin=0.30f, TwoStar_DestructionMin=0.60f, TwoStar_EnemyRatioMin=0.60f,
                     ThreeStar_DestructionMin=0.85f, ThreeStar_EnemyRatioMin=1.00f, ThreeStar_AttemptsRemaining=1,
