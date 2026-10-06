@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using KingSmash.Core;
 using KingSmash.Services;
 using KingSmash.Audio;
 

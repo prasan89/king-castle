@@ -6,6 +6,7 @@ using TMPro;
 using KingSmash.Core;
 using KingSmash.Levels;
 using KingSmash.Services;
+using KingSmash.UI.Widgets;
 
 namespace KingSmash.UI.Screens
 {

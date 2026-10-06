@@ -1,7 +1,10 @@
 {
   "name": "KingSmash.Core",
   "rootNamespace": "KingSmash.Core",
-  "references": [],
+  "references": [
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

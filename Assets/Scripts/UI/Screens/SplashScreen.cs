@@ -40,8 +40,8 @@ namespace KingSmash.UI.Screens
         protected override void OnShow()
         {
             // Background gradient
-            if (Camera.main != null && _themeConfig != null)
-                Camera.main.backgroundColor = _themeConfig.skyTop;
+            if (UnityEngine.Camera.main != null && _themeConfig != null)
+                UnityEngine.Camera.main.backgroundColor = _themeConfig.skyTop;
 
             // Hide everything initially
             if (_logoGroup    != null) { _logoGroup.alpha    = 0f; }
@@ -63,8 +63,8 @@ namespace KingSmash.UI.Screens
             while (bgElapsed < bgDuration)
             {
                 bgElapsed += Time.unscaledDeltaTime;
-                if (Camera.main != null)
-                    Camera.main.backgroundColor = Color.Lerp(skyStart, skyEnd, bgElapsed / bgDuration);
+                if (UnityEngine.Camera.main != null)
+                    UnityEngine.Camera.main.backgroundColor = Color.Lerp(skyStart, skyEnd, bgElapsed / bgDuration);
                 yield return null;
             }
 

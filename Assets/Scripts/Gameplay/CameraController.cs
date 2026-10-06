@@ -6,7 +6,7 @@ namespace KingSmash.Gameplay
 {
     /// Smooth camera controller for the Level scene.
     /// Follows launched King, returns to default on landing/expend.
-    [RequireComponent(typeof(Camera))]
+    [RequireComponent(typeof(UnityEngine.Camera))]
     public class CameraController : MonoBehaviour
     {
         [Header("Follow")]

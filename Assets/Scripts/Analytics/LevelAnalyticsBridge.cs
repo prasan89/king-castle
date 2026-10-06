@@ -69,7 +69,7 @@ namespace KingSmash.Analytics
 
             // Update crash-reporting player context on level start
             if (ServiceLocator.TryGet<ICrashReportingService>(out var crash))
-                crash.SetPlayerContext($"level={_levelId} world={_worldId} attempt={_attemptNumber}");
+                crash.SetPlayerContext(0, _levelId, _worldId);
 
             if (!ServiceLocator.TryGet<IAnalyticsService>(out var analytics)) return;
             if (!AnalyticsRateGuard.Allow(AnalyticsEvents.LevelStart)) return;

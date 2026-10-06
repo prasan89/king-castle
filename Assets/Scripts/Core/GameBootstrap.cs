@@ -32,6 +32,7 @@ using KingSmash.VFX;
 using KingSmash.Camera;
 using KingSmash.Analytics;
 using KingSmash.Config;
+using KingSmash.Save;
 
 namespace KingSmash.Core
 {

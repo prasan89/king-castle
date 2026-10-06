@@ -7,10 +7,10 @@ namespace KingSmash.World
 {
     public class WorldThemeApplicator : MonoBehaviour
     {
-        [SerializeField] private WorldTheme      _theme;
-        [SerializeField] private Camera          _mainCamera;
-        [SerializeField] private SpriteRenderer  _skyBackground;
-        [SerializeField] private ParticleSystem  _ambientParticles;
+        [SerializeField] private WorldTheme              _theme;
+        [SerializeField] private UnityEngine.Camera      _mainCamera;
+        [SerializeField] private SpriteRenderer          _skyBackground;
+        [SerializeField] private ParticleSystem          _ambientParticles;
 
         private void OnEnable()  => ApplyTheme();
         private void OnDisable() => StopAmbientParticles();
@@ -39,7 +39,7 @@ namespace KingSmash.World
         private void ApplyCameraBackground()
         {
             if (_mainCamera == null)
-                _mainCamera = Camera.main;
+                _mainCamera = UnityEngine.Camera.main;
 
             if (_mainCamera == null) return;
             _mainCamera.backgroundColor = Color.Lerp(_theme.skyColorBottom, _theme.skyColorTop, 0.5f);

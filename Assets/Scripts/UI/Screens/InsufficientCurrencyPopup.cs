@@ -3,6 +3,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using KingSmash.Core;
 using KingSmash.Economy;
 using KingSmash.Services;
 using KingSmash.Audio;

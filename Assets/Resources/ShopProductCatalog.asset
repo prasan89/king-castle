@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b52722bada021488491b6e0e6766cf3f, type: 3}
+  m_Name: ShopProductCatalog
+  m_EditorClassIdentifier: KingSmash.Core::KingSmash.Shop.ShopProductCatalog
+  _products:
+  - productId: coins_1000
+    displayName: 1,000 Coins
+    description: Get 1,000 coins
+    shopProductType: 0
+    purchaseProductType: 0
+    coinsGranted: 1000
+    gemsGranted: 0
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 0
+    bonusLabel: 
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: coins_5000
+    displayName: 5,000 Coins
+    description: Get 5,000 coins
+    shopProductType: 0
+    purchaseProductType: 0
+    coinsGranted: 5000
+    gemsGranted: 0
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 1
+    bonusLabel: +10% Bonus
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: coins_15000
+    displayName: 15,000 Coins
+    description: Get 15,000 coins
+    shopProductType: 0
+    purchaseProductType: 0
+    coinsGranted: 15000
+    gemsGranted: 0
+    powerUpRewards: []
+    isFeatured: 1
+    sortOrder: 2
+    bonusLabel: +25% Bonus
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: coins_50000
+    displayName: 50,000 Coins
+    description: Get 50,000 coins
+    shopProductType: 0
+    purchaseProductType: 0
+    coinsGranted: 50000
+    gemsGranted: 0
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 3
+    bonusLabel: +50% Bonus
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: gems_small
+    displayName: Small Gem Pack
+    description: Get 10 gems
+    shopProductType: 1
+    purchaseProductType: 0
+    coinsGranted: 0
+    gemsGranted: 10
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 10
+    bonusLabel: 
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: gems_medium
+    displayName: Medium Gem Pack
+    description: Get 50 gems
+    shopProductType: 1
+    purchaseProductType: 0
+    coinsGranted: 0
+    gemsGranted: 50
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 11
+    bonusLabel: +10%
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: gems_large
+    displayName: Large Gem Pack
+    description: Get 100 gems
+    shopProductType: 1
+    purchaseProductType: 0
+    coinsGranted: 0
+    gemsGranted: 100
+    powerUpRewards: []
+    isFeatured: 1
+    sortOrder: 12
+    bonusLabel: +25%
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: gems_mega
+    displayName: Mega Gem Pack
+    description: Get 500 gems
+    shopProductType: 1
+    purchaseProductType: 0
+    coinsGranted: 0
+    gemsGranted: 500
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 13
+    bonusLabel: +50%
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: remove_ads
+    displayName: Remove Ads
+    description: Remove all ads permanently
+    shopProductType: 2
+    purchaseProductType: 1
+    coinsGranted: 0
+    gemsGranted: 0
+    powerUpRewards: []
+    isFeatured: 0
+    sortOrder: 20
+    bonusLabel: 
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: starter_bundle
+    displayName: Starter Bundle
+    description: Coins, gems, and power-ups to get you started
+    shopProductType: 3
+    purchaseProductType: 0
+    coinsGranted: 5000
+    gemsGranted: 50
+    powerUpRewards:
+    - powerUpTypeId: powerup_bomb
+      count: 3
+    - powerUpTypeId: powerup_fire
+      count: 3
+    isFeatured: 1
+    sortOrder: 21
+    bonusLabel: 
+    icon: {fileID: 0}
+    fallbackPrice: 
+  - productId: king_bundle
+    displayName: King Bundle
+    description: Premium coins, gems, and rare power-ups
+    shopProductType: 4
+    purchaseProductType: 0
+    coinsGranted: 15000
+    gemsGranted: 100
+    powerUpRewards:
+    - powerUpTypeId: powerup_megaking
+      count: 2
+    - powerUpTypeId: powerup_lightning
+      count: 2
+    isFeatured: 0
+    sortOrder: 22
+    bonusLabel: 
+    icon: {fileID: 0}
+    fallbackPrice: 

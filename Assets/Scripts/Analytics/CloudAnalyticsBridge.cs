@@ -113,8 +113,8 @@ namespace KingSmash.Analytics
             if (ServiceLocator.TryGet<ICrashReportingService>(out var crash))
             {
                 crash.RecordError(
-                    ErrorCategory.Save,
-                    "CloudSyncService reported SyncStatus.Failed");
+                    "CloudSyncService reported SyncStatus.Failed",
+                    ErrorCategory.Save);
             }
         }
 

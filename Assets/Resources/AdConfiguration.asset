@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edd539ca327a14af28cc9867adac7f5a, type: 3}
+  m_Name: AdConfiguration
+  m_EditorClassIdentifier: KingSmash.Core::KingSmash.Ads.AdConfiguration
+  rewardedAdsEnabled: 1
+  interstitialAdsEnabled: 1
+  doubleRewardEnabled: 1
+  extraAttemptEnabled: 1
+  freePowerUpEnabled: 1
+  interstitialMinLevels: 3
+  maxInterstitialsPerSession: 3
+  doubleRewardMultiplier: 2
+  freePowerUpType: 1
+  testDeviceIds: []
+  devAppId: ca-app-pub-3940256099942544~3347511713
+  devRewardedAdUnitId: ca-app-pub-3940256099942544/5224354917
+  devInterstitialAdUnitId: ca-app-pub-3940256099942544/1033173712
+  stagingAppId: STAGING_APP_ID
+  stagingRewardedAdUnitId: STAGING_REWARDED_ID
+  stagingInterstitialAdUnitId: STAGING_INTERSTITIAL_ID
+  productionAppId: 
+  productionRewardedAdUnitId: 
+  productionInterstitialAdUnitId: 

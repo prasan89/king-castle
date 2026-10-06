@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d22919881ff34c998f9c114c9e9f5a0, type: 3}
+  m_Name: DailyRewardConfig
+  m_EditorClassIdentifier: KingSmash.Core::KingSmash.Retention.DailyRewardConfig
+  rewards:
+  - day: 1
+    coinsReward: 200
+    gemsReward: 0
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 0
+    displayName: Day 1
+  - day: 2
+    coinsReward: 350
+    gemsReward: 0
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 0
+    displayName: Day 2
+  - day: 3
+    coinsReward: 500
+    gemsReward: 5
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 0
+    displayName: Day 3
+  - day: 4
+    coinsReward: 700
+    gemsReward: 0
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 0
+    displayName: Day 4
+  - day: 5
+    coinsReward: 1000
+    gemsReward: 0
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 0
+    displayName: Day 5
+  - day: 6
+    coinsReward: 1500
+    gemsReward: 10
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 0
+    displayName: Day 6
+  - day: 7
+    coinsReward: 2500
+    gemsReward: 20
+    powerUpTypeId: 
+    powerUpCount: 0
+    isTreasureChest: 1
+    displayName: "Day 7 \u2014 Treasure!"

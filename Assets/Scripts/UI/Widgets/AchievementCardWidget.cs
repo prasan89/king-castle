@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using KingSmash.Retention;
+using KingSmash.Save;
 
 namespace KingSmash.UI.Widgets
 {

@@ -61,7 +61,7 @@ namespace KingSmash.World
 
         private IEnumerator ZoomCamera(Transform target, float duration)
         {
-            var cam = Camera.main;
+            var cam = UnityEngine.Camera.main;
             if (cam == null || !cam.orthographic) yield break;
 
             float startSize = cam.orthographicSize;

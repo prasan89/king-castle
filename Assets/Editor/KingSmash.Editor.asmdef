@@ -1,0 +1,18 @@
+{
+  "name": "KingSmash.Editor",
+  "rootNamespace": "KingSmash.Editor",
+  "references": [
+    "KingSmash.Core"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

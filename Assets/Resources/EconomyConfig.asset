@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39d7c2937120a4a11a1118de5278b31e, type: 3}
+  m_Name: EconomyConfig
+  m_EditorClassIdentifier: KingSmash.Core::KingSmash.Economy.EconomyConfig
+  coinsPerStar: 25
+  bonusCoinsThreeStars: 100
+  gemsFromFirstComplete: 2
+  kingPowerUpgrades: []
+  kingSpeedUpgrades: []
+  kingSmashUpgrades: []
+  kingArmorUpgrades: []
+  coinsPerStructureDestroyed: 5
+  coinsPerEnemyKilled: 10
+  rewardedAdCoins: 100
+  rewardedAdGems: 1
+  baseLevelCoinsMin: 100
+  baseLevelCoinsMax: 500
+  levelCoinScalePer10Levels: 50
+  destructionBonuses:
+  - threshold: 0
+    bonusCoins: 0
+  - threshold: 0.5
+    bonusCoins: 50
+  - threshold: 0.7
+    bonusCoins: 150
+  - threshold: 0.9
+    bonusCoins: 300
+  guardKillCoins: 20
+  shieldGuardKillCoins: 30
+  archerKillCoins: 35
+  enemyKingKillCoins: 100
+  oneStarBonus: 0
+  twoStarBonus: 50
+  threeStarBonus: 200
+  queenRescueBonus: 100
+  worldRewards:
+  - worldIndex: 0
+    coins: 500
+    gems: 5
+    powerUpTypeId: 
+    powerUpCount: 0
+  - worldIndex: 1
+    coins: 750
+    gems: 7
+    powerUpTypeId: powerup_bomb
+    powerUpCount: 1
+  - worldIndex: 2
+    coins: 1000
+    gems: 10
+    powerUpTypeId: powerup_fire
+    powerUpCount: 1
+  - worldIndex: 3
+    coins: 1500
+    gems: 12
+    powerUpTypeId: powerup_ice
+    powerUpCount: 1
+  - worldIndex: 4
+    coins: 2000
+    gems: 15
+    powerUpTypeId: powerup_megaking
+    powerUpCount: 1
+  powerUpPrices:
+  - powerUpTypeId: powerup_bomb
+    coinCost: 100
+    gemCost: 0
+  - powerUpTypeId: powerup_fire
+    coinCost: 150
+    gemCost: 0
+  - powerUpTypeId: powerup_ice
+    coinCost: 150
+    gemCost: 0
+  - powerUpTypeId: powerup_lightning
+    coinCost: 200
+    gemCost: 0
+  - powerUpTypeId: powerup_megaking
+    coinCost: 300
+    gemCost: 0

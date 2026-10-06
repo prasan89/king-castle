@@ -1,4 +1,5 @@
 using System;
+using KingSmash.Core;
 using KingSmash.Progression;
 using KingSmash.PowerUps;
 using KingSmash.Save;

@@ -112,6 +112,7 @@ namespace KingSmash.Services.Firebase
 
         public async Task<AuthUser> LinkGoogleAccountAsync(string googleIdToken)
         {
+#if FIREBASE_ENABLED
             if (_currentUser == null)
                 throw new InvalidOperationException("Must be signed in before linking.");
 
@@ -141,6 +142,10 @@ namespace KingSmash.Services.Firebase
                 GameLogger.Error("FirebaseAuth", $"LinkGoogleAccountAsync failed: {ex.Message}");
                 throw;
             }
+#else
+            await System.Threading.Tasks.Task.CompletedTask;
+            throw new NotImplementedException("LinkGoogleAccountAsync requires FIREBASE_ENABLED.");
+#endif
         }
 
         public Task SignOutAsync()

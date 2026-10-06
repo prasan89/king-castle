@@ -80,7 +80,7 @@ namespace KingSmash.UI.Screens
             if (!ServiceLocator.TryGet<AchievementConfig>(out var achConfig)) return;
             if (!ServiceLocator.TryGet<MissionService>(out var missionService)) return;
 
-            int totalPoints = 0;
+            long totalPoints = 0;
 
             foreach (var def in achConfig.achievements)
             {

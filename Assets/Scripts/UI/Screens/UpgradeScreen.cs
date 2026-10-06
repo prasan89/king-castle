@@ -8,6 +8,7 @@ using KingSmash.Services;
 using KingSmash.Economy;
 using KingSmash.Audio;
 using KingSmash.UI.Components;
+using KingSmash.UI.Widgets;
 
 namespace KingSmash.UI.Screens
 {

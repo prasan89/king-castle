@@ -1,4 +1,5 @@
 using UnityEngine;
+using KingSmash.Core;
 
 namespace KingSmash.Save
 {

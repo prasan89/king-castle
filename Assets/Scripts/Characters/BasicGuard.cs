@@ -1,4 +1,5 @@
 using UnityEngine;
+using KingSmash.Core;
 using KingSmash.Services;
 
 namespace KingSmash.Characters

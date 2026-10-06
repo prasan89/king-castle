@@ -20,7 +20,7 @@ namespace KingSmash.Economy
                 GameLogger.Warning("DebugEconomyTools", "CurrencyService not registered.");
                 return;
             }
-            currency.TryAdd(amount, "DEBUG");
+            currency.TryAdd(amount, "DEBUG", out _);
             GameLogger.Info("DebugEconomyTools", $"Added {amount} coins.");
         }
 
@@ -37,7 +37,7 @@ namespace KingSmash.Economy
                 GameLogger.Warning("DebugEconomyTools", "CurrencyService not registered.");
                 return;
             }
-            currency.TryAdd(amount, "DEBUG");
+            currency.TryAdd(amount, "DEBUG", out _);
             GameLogger.Info("DebugEconomyTools", $"Added {amount} coins (big).");
         }
 
@@ -108,7 +108,7 @@ namespace KingSmash.Economy
                 GameLogger.Warning("DebugEconomyTools", "CurrencyService not registered.");
                 return;
             }
-            currency.TryAdd(500, "DEBUG_TEST_REWARD");
+            currency.TryAdd(500, "DEBUG_TEST_REWARD", out _);
             GameLogger.Info("DebugEconomyTools", "Granted test reward: 500 coins.");
 
             if (ServiceLocator.TryGet<PowerUpService>(out var powerUpService))
